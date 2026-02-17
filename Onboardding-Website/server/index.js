@@ -19,11 +19,14 @@ app.use(cors({
             'https://fic-onboarding-website-git-main-vaideeswaris-projects.vercel.app' // Vercel Preview/Git URLs
         ];
 
+        // Log the origin for debugging on the server
+        console.log(`Incoming request origin: ${origin}`);
+
         // Allow requests with no origin (like mobile apps or curl requests)
         if (!origin) return callback(null, true);
 
         // Allow any Vercel deployment (dynamic)
-        if (origin.includes('.vercel.app')) {
+        if (origin.endsWith('.vercel.app')) {
             return callback(null, true);
         }
 
@@ -32,8 +35,9 @@ app.use(cors({
             return callback(null, true);
         }
 
-        // Fallback: Allow all for troubleshooting (Current behavior, but confirming it)
-        callback(null, true);
+        // Block others
+        console.log(`Blocked by CORS: ${origin}`);
+        callback(new Error('Not allowed by CORS'));
     },
     methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
     credentials: true
