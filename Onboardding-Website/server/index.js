@@ -11,8 +11,14 @@ const app = express();
 const PORT = process.env.PORT || 5000;
 
 app.use(cors({
-    origin: 'http://localhost:5173',
-    methods: ['GET', 'POST', 'PUT', 'DELETE'],
+    origin: (origin, callback) => {
+        // Allow requests with no origin (like mobile apps or curl requests)
+        if (!origin) return callback(null, true);
+        // Allow any origin for now to ensure Vercel deployment works
+        // In production, you might want to restrict this to specific domains
+        callback(null, true);
+    },
+    methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
     credentials: true
 }));
 app.use(express.json({ limit: '10mb' }));
@@ -32,21 +38,29 @@ app.use((req, res, next) => {
 
 // Admin Login
 app.post('/api/auth/login', (req, res) => {
-    const { email, password } = req.body;
-    console.log(`Login attempt: ${email} with password: ${password}`);
+    try {
+        const { email, password } = req.body;
+        const passLen = password ? password.length : 'N/A';
+        console.log(`Login attempt: '${email}' with password length: ${passLen}`);
+        console.log(`Expected: 'info@forgeindiaconnect.com'`);
 
-    // Hardcoded admin for demo
-    if (email === 'admin@gmail.com' && password === 'admin') {
-        res.json({
-            user: {
-                id: 'ADMIN-001',
-                name: 'HR Admin',
-                email: 'admin@gmail.com',
-                role: 'admin'
-            }
-        });
-    } else {
-        res.status(401).json({ message: 'Invalid Admin Credentials' });
+        // Hardcoded admin for demo
+        if (email === 'info@forgeindiaconnect.com' && password === 'Forgeindia@09') {
+            res.json({
+                user: {
+                    id: 'ADMIN-001',
+                    name: 'Super Admin',
+                    email: 'info@forgeindiaconnect.com',
+                    role: 'admin'
+                }
+            });
+        } else {
+            console.log('Credentials did not match.');
+            res.status(401).json({ message: 'Invalid Admin Credentials' });
+        }
+    } catch (error) {
+        console.error('Login Route Error:', error);
+        res.status(500).json({ message: 'Internal Server Error during login' });
     }
 });
 
@@ -56,6 +70,34 @@ app.post('/api/auth/otp/send', (req, res) => {
     console.log(`Sending OTP to ${email}`);
     // In a real app, send email/SMS here.
     res.json({ message: 'OTP sent successfully' });
+});
+
+// Candidate Direct Login (No OTP)
+app.post('/api/auth/candidate/login', async (req, res) => {
+    const { email } = req.body;
+    try {
+        // Check if candidate exists
+        let candidate = await Candidate.findOne({ email });
+
+        if (!candidate) {
+            // Auto-register if not found
+            candidate = new Candidate({
+                id: 'CAND-' + Math.random().toString(36).substr(2, 9),
+                name: email.split('@')[0], // Default name from email
+                email: email,
+                role: 'candidate',
+                status: 'Onboarding',
+                date: new Date().toISOString().split('T')[0],
+                documents: []
+            });
+            await candidate.save();
+        }
+
+        res.json({ user: candidate });
+    } catch (error) {
+        console.error('Candidate Login Error:', error);
+        res.status(500).json({ message: 'Server error during login' });
+    }
 });
 
 // Candidate Register
@@ -215,6 +257,73 @@ app.get('/api/candidates/:id', async (req, res) => {
     } catch (error) {
         console.error('Fetch Candidate Error:', error);
         res.status(500).json({ message: 'Server error fetching candidate' });
+    }
+});
+
+// Delete Candidate
+app.delete('/api/candidates/:id', async (req, res) => {
+    try {
+        const candidate = await Candidate.findOneAndDelete({
+            $or: [
+                { _id: mongoose.isValidObjectId(req.params.id) ? req.params.id : null },
+                { id: req.params.id }
+            ]
+        });
+
+        if (!candidate) {
+            return res.status(404).json({ message: 'Candidate not found' });
+        }
+
+        // Also delete associated messages? Optional, but good practice.
+        // await Message.deleteMany({ $or: [{ sender: candidate.email }, { receiver: candidate.email }] });
+
+        res.json({ message: 'Candidate deleted successfully' });
+    } catch (error) {
+        console.error('Delete Candidate Error:', error);
+        res.status(500).json({ message: 'Server error deleting candidate' });
+    }
+});
+
+// Retention Policy Check (90 Days)
+app.get('/api/admin/check-retention', async (req, res) => {
+    try {
+        const ninetyDaysAgo = new Date();
+        ninetyDaysAgo.setDate(ninetyDaysAgo.getDate() - 90);
+
+        // Find candidates joined/created more than 90 days ago AND have documents
+        const expiredCandidates = await Candidate.find({
+            createdAt: { $lt: ninetyDaysAgo },
+            documents: { $not: { $size: 0 } }
+        });
+
+        let clearedCount = 0;
+        for (const candidate of expiredCandidates) {
+            candidate.documents = []; // Clear documents
+            await candidate.save();
+            clearedCount++;
+        }
+
+        // Warning Logic (e.g., candidates > 83 days)
+        const warningDaysAgo = new Date();
+        warningDaysAgo.setDate(warningDaysAgo.getDate() - 83);
+        const warningCandidates = await Candidate.find({
+            createdAt: { $lt: warningDaysAgo, $gte: ninetyDaysAgo },
+            documents: { $not: { $size: 0 } }
+        });
+
+        res.json({
+            message: 'Retention check complete',
+            clearedCount,
+            warnings: warningCandidates.map(c => ({
+                id: c._id,
+                name: c.name,
+                daysLeft: 90 - Math.floor((new Date() - new Date(c.createdAt)) / (1000 * 60 * 60 * 24))
+            }))
+        });
+
+    } catch (error) {
+        console.error('Retention Check Error:', error);
+        res.status(500).json({ message: 'Error checking retention policy' });
     }
 });
 

@@ -5,38 +5,29 @@ import { Building2, User, Lock, Mail, Phone, ArrowRight } from 'lucide-react';
 
 export default function Login() {
     const [activeTab, setActiveTab] = useState('candidate'); // 'candidate' | 'admin'
-    const [step, setStep] = useState(1); // 1: Input, 2: OTP (for candidate)
     // Pre-fill valid admin credentials for convenience
     const [formData, setFormData] = useState({
-        email: 'admin@gmail.com',
+        email: 'info@forgeindiaconnect.com',
         phone: '',
-        otp: '',
-        password: 'admin'
+        password: 'Forgeindia@09' // Only used for admin
     });
-    const { loginAdmin, sendOtp, verifyOtp } = useAuth();
+    const { loginAdmin, loginCandidate } = useAuth();
     const navigate = useNavigate();
 
-    const handleSendOtp = async (e) => {
+    const handleCandidateLogin = async (e) => {
         e.preventDefault();
-        const success = await sendOtp(formData.email);
-        if (success) {
-            setStep(2);
-        } else {
-            alert('Failed to send OTP. Please try again.');
+        // Basic validation
+        if (!formData.email) {
+            alert('Please enter your Email or Mobile Number');
+            return;
         }
-    };
 
-    const handleVerifyOtp = async (e) => {
-        e.preventDefault();
-        if (formData.otp.length === 4) {
-            const success = await verifyOtp(formData.email, formData.otp);
-            if (success) {
-                navigate('/dashboard');
-            } else {
-                alert('Invalid OTP or verification failed');
-            }
+        const result = await loginCandidate(formData.email);
+        if (result.success) {
+            navigate('/dashboard');
         } else {
-            alert('Please enter a 4-digit OTP');
+            console.error('Login failed:', result);
+            alert(result.message || 'Login failed. Please try again.');
         }
     };
 
@@ -79,7 +70,7 @@ export default function Login() {
                                 ? 'text-blue-600 border-b-2 border-blue-600'
                                 : 'text-slate-500 hover:text-slate-700'
                                 }`}
-                            onClick={() => { setActiveTab('candidate'); setStep(1); }}
+                            onClick={() => setActiveTab('candidate')}
                         >
                             Candidate Login
                         </button>
@@ -95,87 +86,36 @@ export default function Login() {
                     </div>
 
                     {activeTab === 'candidate' ? (
-                        step === 1 ? (
-                            <form className="space-y-6" onSubmit={handleSendOtp}>
-                                <div>
-                                    <label htmlFor="email" className="block text-sm font-medium text-slate-700">
-                                        Email or Mobile Number
-                                    </label>
-                                    <div className="mt-1 relative rounded-md shadow-sm">
-                                        <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                                            <Mail className="h-5 w-5 text-slate-400" />
-                                        </div>
-                                        <input
-                                            id="email"
-                                            name="email"
-                                            type="text"
-                                            required
-                                            className="focus:ring-blue-500 focus:border-blue-500 block w-full pl-10 sm:text-sm border-slate-300 rounded-lg p-2.5"
-                                            placeholder="you@example.com"
-                                            value={formData.email}
-                                            onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                                        />
+                        <form className="space-y-6" onSubmit={handleCandidateLogin}>
+                            <div>
+                                <label htmlFor="email" className="block text-sm font-medium text-slate-700">
+                                    Email or Mobile Number
+                                </label>
+                                <div className="mt-1 relative rounded-md shadow-sm">
+                                    <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                                        <Mail className="h-5 w-5 text-slate-400" />
                                     </div>
+                                    <input
+                                        id="email"
+                                        name="email"
+                                        type="text"
+                                        required
+                                        className="focus:ring-blue-500 focus:border-blue-500 block w-full pl-10 sm:text-sm border-slate-300 rounded-lg p-2.5"
+                                        placeholder="you@example.com"
+                                        value={formData.email}
+                                        onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                                    />
                                 </div>
+                            </div>
 
-                                <button
-                                    type="submit"
-                                    className="w-full flex justify-center py-2.5 px-4 border border-transparent rounded-lg shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors"
-                                >
-                                    Send OTP
-                                    <ArrowRight className="ml-2 w-4 h-4" />
-                                </button>
-                            </form>
-                        ) : (
-                            <form className="space-y-6" onSubmit={handleVerifyOtp}>
-                                <div className="text-center mb-4">
-                                    <p className="text-sm text-slate-600">Please enter the OTP sent to</p>
-                                    <p className="font-medium text-slate-900">{formData.email}</p>
-                                </div>
-
-                                <div>
-                                    <label htmlFor="otp" className="block text-sm font-medium text-slate-700">
-                                        One Time Password
-                                    </label>
-                                    <div className="mt-1 relative rounded-md shadow-sm">
-                                        <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                                            <Lock className="h-5 w-5 text-slate-400" />
-                                        </div>
-                                        <input
-                                            id="otp"
-                                            name="otp"
-                                            type="text"
-                                            required
-                                            className="focus:ring-blue-500 focus:border-blue-500 block w-full pl-10 sm:text-sm border-slate-300 rounded-lg p-2.5 tracking-widest text-center text-lg"
-                                            placeholder="XXXX"
-                                            maxLength={4}
-                                            value={formData.otp}
-                                            onChange={(e) => setFormData({ ...formData, otp: e.target.value })}
-                                        />
-                                    </div>
-                                    <p className="mt-2 text-xs text-center text-slate-500">
-                                        (Use any 4 digits for demo)
-                                    </p>
-                                </div>
-
-                                <button
-                                    type="submit"
-                                    className="w-full flex justify-center py-2.5 px-4 border border-transparent rounded-lg shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors"
-                                >
-                                    Verify & Login
-                                </button>
-
-                                <div className="text-center">
-                                    <button
-                                        type="button"
-                                        onClick={() => setStep(1)}
-                                        className="text-sm text-blue-600 hover:text-blue-500"
-                                    >
-                                        Change Number/Email
-                                    </button>
-                                </div>
-                            </form>
-                        )
+                            <button
+                                type="submit"
+                                className="w-full flex justify-center py-2.5 px-4 border border-transparent rounded-lg shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors"
+                            >
+                                Login
+                                <ArrowRight className="ml-2 w-4 h-4" />
+                            </button>
+                        </form>
                     ) : (
                         <form className="space-y-6" onSubmit={handleAdminLogin}>
                             <div>

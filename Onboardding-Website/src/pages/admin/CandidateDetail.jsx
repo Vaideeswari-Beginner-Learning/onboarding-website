@@ -17,11 +17,13 @@ export default function CandidateDetail() {
     const [chatInput, setChatInput] = useState('');
     const chatEndRef = useRef(null);
 
+    const API_BASE = import.meta.env.VITE_API_URL || '';
+
     // Fetch Candidate Details
     useEffect(() => {
         const fetchCandidate = async () => {
             try {
-                const response = await fetch(`/api/candidates/${id}`);
+                const response = await fetch(`${API_BASE}/api/candidates/${id}`);
                 if (response.ok) {
                     const data = await response.json();
                     setCandidate(data);
@@ -45,7 +47,7 @@ export default function CandidateDetail() {
         const fetchMessages = async () => {
             try {
                 const normalizedEmail = candidate.email.trim().toLowerCase();
-                const response = await fetch(`/api/messages/${normalizedEmail}`);
+                const response = await fetch(`${API_BASE}/api/messages/${normalizedEmail}`);
                 if (response.ok) {
                     const data = await response.json();
                     setMessages(data);
@@ -82,7 +84,7 @@ export default function CandidateDetail() {
         setChatInput('');
 
         try {
-            await fetch('/api/messages', {
+            await fetch(`${API_BASE}/api/messages`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(newMessage)
@@ -125,7 +127,7 @@ export default function CandidateDetail() {
     const handleGenerateOffer = async (e) => {
         e.preventDefault();
         try {
-            const response = await fetch('/api/admin/generate-offer', {
+            const response = await fetch(`${API_BASE}/api/admin/generate-offer`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({

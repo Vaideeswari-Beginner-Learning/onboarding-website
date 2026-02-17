@@ -13,11 +13,13 @@ export default function AdminChat() {
     const [input, setInput] = useState('');
     const messagesEndRef = useRef(null);
 
+    const API_BASE = import.meta.env.VITE_API_URL || '';
+
     // Fetch active conversations
     useEffect(() => {
         const fetchConversations = async () => {
             try {
-                const response = await fetch('/api/admin/conversations');
+                const response = await fetch(`${API_BASE}/api/admin/conversations`);
                 if (response.ok) {
                     const data = await response.json();
                     console.log("AdminChat: Conversations list:", data);
@@ -56,7 +58,7 @@ export default function AdminChat() {
             try {
                 const normalizedEmail = selectedUser.email.trim().toLowerCase();
                 console.log("AdminChat: Fetching messages for", normalizedEmail);
-                const response = await fetch(`/api/messages/${normalizedEmail}`);
+                const response = await fetch(`${API_BASE}/api/messages/${normalizedEmail}`);
                 if (response.ok) {
                     const data = await response.json();
                     setMessages(data);
@@ -95,7 +97,7 @@ export default function AdminChat() {
         setInput('');
 
         try {
-            await fetch('/api/messages', {
+            await fetch(`${API_BASE}/api/messages`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(newMessage)

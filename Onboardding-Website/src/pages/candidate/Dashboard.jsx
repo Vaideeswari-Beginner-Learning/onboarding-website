@@ -6,7 +6,9 @@ import { FileText, Upload, CheckSquare, Clock } from 'lucide-react';
 import { generateOfferLetter } from '../../utils/offerLetterGenerator';
 
 export default function CandidateDashboard() {
-    const { user } = useAuth();
+    const { user, loginCandidate } = useAuth();
+
+    const API_BASE = import.meta.env.VITE_API_URL || '';
 
     // Calculate current step based on completion
     const getStep = () => {
@@ -17,6 +19,36 @@ export default function CandidateDashboard() {
     };
 
     const currentStep = getStep();
+
+    // Offer Letter Request Logic
+    const [showConfetti, setShowConfetti] = useState(false);
+
+    useEffect(() => {
+        if (user?.offerLetterStatus === 'Generated') {
+            setShowConfetti(true);
+            setTimeout(() => setShowConfetti(false), 5000);
+        }
+    }, [user]);
+
+    const handleRequestOfferLetter = async () => {
+        try {
+            const response = await fetch(`${API_BASE}/api/candidates/request-offer`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ email: user.email })
+            });
+            if (response.ok) {
+                alert('Offer Letter Requested Successfully!');
+                // Refresh user data
+                loginCandidate(user.email);
+            } else {
+                alert('Failed to request offer letter.');
+            }
+        } catch (error) {
+            console.error('Error requesting offer:', error);
+            alert('Error requesting offer letter.');
+        }
+    };
 
     return (
         <div className="min-h-screen bg-slate-50">

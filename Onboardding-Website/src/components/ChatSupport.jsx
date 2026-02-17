@@ -9,6 +9,8 @@ export default function ChatSupport() {
     const [input, setInput] = useState('');
     const messagesEndRef = useRef(null);
 
+    const API_BASE = import.meta.env.VITE_API_URL || '';
+
     // Initial load and polling for new messages
     useEffect(() => {
         if (!user || user.role === 'admin') return; // Admin has their own chat page
@@ -16,14 +18,10 @@ export default function ChatSupport() {
         const loadMessages = async () => {
             try {
                 const normalizedEmail = user.email.trim().toLowerCase();
-                console.log("ChatSupport: Polling messages for", normalizedEmail);
-                const response = await fetch(`/api/messages/${normalizedEmail}`);
+                const response = await fetch(`${API_BASE}/api/messages/${normalizedEmail}`);
                 if (response.ok) {
                     const data = await response.json();
-                    console.log("ChatSupport: Received messages", data.length);
                     setMessages(data);
-                } else {
-                    console.error("ChatSupport: Failed to fetch messages", response.status);
                 }
             } catch (error) {
                 console.error("ChatSupport: Error loading messages:", error);
@@ -62,7 +60,7 @@ export default function ChatSupport() {
 
         try {
             console.log("ChatSupport: Sending message...");
-            const res = await fetch('/api/messages', {
+            const res = await fetch(`${API_BASE}/api/messages`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(newMessage)

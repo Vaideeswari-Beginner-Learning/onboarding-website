@@ -1,7 +1,9 @@
 import { useNavigate } from 'react-router-dom';
 import { useState, useEffect, useRef } from 'react';
 import Navbar from '../../components/Navbar';
-import { Users, Search, Filter, MoreVertical, Eye, FileText, CheckCircle, XCircle, Clock, MessageSquare, Send, X } from 'lucide-react';
+import { Users, Search, Filter, MoreVertical, Eye, FileText, CheckCircle, XCircle, Clock, MessageSquare, Send, X, Trash2 } from 'lucide-react';
+import JSZip from 'jszip';
+import { saveAs } from 'file-saver';
 
 export default function AdminDashboard() {
     const navigate = useNavigate();
@@ -9,12 +11,15 @@ export default function AdminDashboard() {
     const [selectedChatCandidate, setSelectedChatCandidate] = useState(null);
     const [chatMessages, setChatMessages] = useState([]);
     const [adminInput, setAdminInput] = useState('');
+    const [retentionWarnings, setRetentionWarnings] = useState([]);
     const chatEndRef = useRef(null);
+
+    const API_BASE = import.meta.env.VITE_API_URL || '';
 
     useEffect(() => {
         const fetchCandidates = async () => {
             try {
-                const response = await fetch('/api/candidates');
+                const response = await fetch(`${API_BASE}/api/candidates`);
                 if (response.ok) {
                     const data = await response.json();
                     // Reverse to show newest first, assuming backend returns chronological order
@@ -27,22 +32,77 @@ export default function AdminDashboard() {
             }
         };
 
+        const checkRetention = async () => {
+            try {
+                const response = await fetch(`${API_BASE}/api/admin/check-retention`);
+                if (response.ok) {
+                    const data = await response.json();
+                    if (data.clearedCount > 0) {
+                        alert(`Retention Policy: Documents for ${data.clearedCount} candidate(s) were older than 90 days and have been deleted.`);
+                        fetchCandidates(); // Refresh list
+                    }
+                    if (data.warnings && data.warnings.length > 0) {
+                        setRetentionWarnings(data.warnings);
+                    }
+                }
+            } catch (error) {
+                console.error('Retention check failed:', error);
+            }
+        };
+
         fetchCandidates();
+        checkRetention();
         // Optional: Polling or WebSocket for real-time updates could go here
     }, []);
+
+    // ... (chat polling effect omitted, see next replace block if needed)
+
+    // ... (handleSendAdminMessage omitted)
+
+    // ... (handleDeleteMessage omitted)
+
+    const handleDeleteCandidate = async (candidateId) => {
+        if (window.confirm('Are you sure you want to permanently delete this candidate? This action cannot be undone.')) {
+            try {
+                const response = await fetch(`${API_BASE}/api/candidates/${candidateId}`, {
+                    method: 'DELETE',
+                });
+
+                if (response.ok) {
+                    setCandidates(candidates.filter(c => c._id !== candidateId && c.id !== candidateId));
+                    // Also close chat if it was open for this candidate
+                    if (selectedChatCandidate && (selectedChatCandidate._id === candidateId || selectedChatCandidate.id === candidateId)) {
+                        setSelectedChatCandidate(null);
+                    }
+                } else {
+                    alert('Failed to delete candidate');
+                }
+            } catch (error) {
+                console.error('Error deleting candidate:', error);
+                alert('Error deleting candidate');
+            }
+        }
+    };
 
     // Poll for chat messages when a chat is open
     useEffect(() => {
         if (!selectedChatCandidate) return;
 
-        const loadChat = () => {
-            // Chat history still local for now as per previous implementation pattern
-            // or could be moved to backend later
-            const history = localStorage.getItem(`chat_history_${selectedChatCandidate.email}`);
-            if (history) {
-                setChatMessages(JSON.parse(history));
-            } else {
-                if (chatMessages.length === 0) setChatMessages([]);
+        const loadChat = async () => {
+            // Load from backend
+            try {
+                const response = await fetch(`${API_BASE}/api/messages/${selectedChatCandidate.email}`);
+                if (response.ok) {
+                    const data = await response.json();
+                    setChatMessages(data);
+                    // Update local storage as backup
+                    localStorage.setItem(`chat_history_${selectedChatCandidate.email}`, JSON.stringify(data));
+                }
+            } catch (error) {
+                console.error('Error loading chat:', error);
+                // Fallback to local
+                const history = localStorage.getItem(`chat_history_${selectedChatCandidate.email}`);
+                if (history) setChatMessages(JSON.parse(history));
             }
         };
 
@@ -58,7 +118,7 @@ export default function AdminDashboard() {
         }
     }, [chatMessages, selectedChatCandidate]);
 
-    const handleSendAdminMessage = (e) => {
+    const handleSendAdminMessage = async (e) => {
         e.preventDefault();
         if (!adminInput.trim() || !selectedChatCandidate) return;
 
@@ -68,10 +128,63 @@ export default function AdminDashboard() {
             timestamp: Date.now()
         };
 
+        // Optimistic UI update
         const updatedHistory = [...chatMessages, newMsg];
         setChatMessages(updatedHistory);
         localStorage.setItem(`chat_history_${selectedChatCandidate.email}`, JSON.stringify(updatedHistory));
         setAdminInput('');
+
+        // Send to backend
+        try {
+            await fetch(`${API_BASE}/api/messages`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    sender: 'admin',
+                    senderName: 'Admin',
+                    receiver: selectedChatCandidate.email,
+                    text: newMsg.text
+                })
+            });
+        } catch (error) {
+            console.error('Error sending message:', error);
+        }
+    };
+
+    const handleDeleteMessage = (index) => {
+        if (!selectedChatCandidate) return;
+        const updatedHistory = chatMessages.filter((_, i) => i !== index);
+        setChatMessages(updatedHistory);
+        localStorage.setItem(`chat_history_${selectedChatCandidate.email}`, JSON.stringify(updatedHistory));
+    };
+
+    // Removed duplicate handleDeleteCandidate from here
+
+    const handleDownloadAll = async (candidate) => {
+        if (!candidate.documents || candidate.documents.length === 0) {
+            alert('No documents to download.');
+            return;
+        }
+
+        const zip = new JSZip();
+        let count = 0;
+
+        candidate.documents.forEach((doc) => {
+            if (doc.url && doc.url.startsWith('data:')) {
+                // Remove header "data:application/pdf;base64,"
+                const base64Data = doc.url.split(',')[1];
+                zip.file(doc.name, base64Data, { base64: true });
+                count++;
+            }
+        });
+
+        if (count === 0) {
+            alert('No valid documents found to download (documents might be from before the Base64 update).');
+            return;
+        }
+
+        const content = await zip.generateAsync({ type: 'blob' });
+        saveAs(content, `${candidate.name}_Documents.zip`);
     };
 
     const getStatusBadge = (status) => {
@@ -99,6 +212,42 @@ export default function AdminDashboard() {
                         <p className="mt-1 text-slate-500">Manage ongoing onboardings and verify documents.</p>
                     </div>
                 </div>
+
+                {/* Offer Request Alert */}
+                {candidates.some(c => c.offerLetterStatus === 'Requested') && (
+                    <div className="mb-6 bg-purple-50 border border-purple-200 rounded-xl p-4 flex items-center justify-between animate-in slide-in-from-top-4">
+                        <div className="flex items-center">
+                            <div className="bg-purple-100 p-2 rounded-lg mr-4 text-purple-600">
+                                <FileText className="w-6 h-6" />
+                            </div>
+                            <div>
+                                <h3 className="font-bold text-purple-900">
+                                    {candidates.filter(c => c.offerLetterStatus === 'Requested').length} Pending Offer Request(s)
+                                </h3>
+                                <p className="text-sm text-purple-700">Candidates have completed onboarding and are waiting for their offer letter.</p>
+                            </div>
+                        </div>
+                    </div>
+                )}
+
+                {/* Retention Warning Alert */}
+                {retentionWarnings.length > 0 && (
+                    <div className="mb-6 bg-amber-50 border border-amber-200 rounded-xl p-4 flex items-center justify-between animate-in slide-in-from-top-4">
+                        <div className="flex items-center">
+                            <div className="bg-amber-100 p-2 rounded-lg mr-4 text-amber-600">
+                                <Clock className="w-6 h-6" />
+                            </div>
+                            <div>
+                                <h3 className="font-bold text-amber-900">
+                                    {retentionWarnings.length} Candidate(s) Approaching Document Deletion
+                                </h3>
+                                <p className="text-sm text-amber-700">
+                                    Documents for {retentionWarnings.map(w => `${w.name} (${w.daysLeft} days left)`).join(', ')} will be permanently deleted soon. Please download them.
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+                )}
 
                 {/* Candidates Table */}
                 <div className="bg-white shadow-sm rounded-xl border border-slate-200 overflow-hidden mt-8">
@@ -133,14 +282,40 @@ export default function AdminDashboard() {
                                             <div className="text-xs text-slate-500">{candidate.date}</div>
                                         </td>
                                         <td className="px-6 py-4 whitespace-nowrap">
-                                            {getStatusBadge(candidate.status)}
+                                            <div className="flex flex-col gap-1">
+                                                {getStatusBadge(candidate.status)}
+                                                {candidate.offerLetterStatus === 'Requested' && (
+                                                    <span className="px-2 py-1 text-xs font-semibold rounded-full bg-purple-100 text-purple-800 flex items-center md:w-fit animate-pulse">
+                                                        <FileText className="w-3 h-3 mr-1" /> Offer Requested
+                                                    </span>
+                                                )}
+                                                {candidate.offerLetterStatus === 'Generated' && (
+                                                    <span className="px-2 py-1 text-xs font-semibold rounded-full bg-green-50 text-green-600 flex items-center md:w-fit border border-green-200">
+                                                        <CheckCircle className="w-3 h-3 mr-1" /> Offer Sent
+                                                    </span>
+                                                )}
+                                            </div>
                                         </td>
                                         <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                                            <button
+                                                onClick={() => handleDownloadAll(candidate)}
+                                                className="text-emerald-600 hover:text-emerald-900 bg-emerald-50 hover:bg-emerald-100 px-3 py-1 rounded-md mr-2 transition-colors inline-flex items-center"
+                                                title="Download All Documents"
+                                            >
+                                                <FileText className="w-4 h-4 mr-1" /> Zip
+                                            </button>
                                             <button
                                                 onClick={() => setSelectedChatCandidate(candidate)}
                                                 className="text-blue-600 hover:text-blue-900 bg-blue-50 hover:bg-blue-100 px-3 py-1 rounded-md mr-2 transition-colors inline-flex items-center"
                                             >
                                                 <MessageSquare className="w-4 h-4 mr-1" /> Chat
+                                            </button>
+                                            <button
+                                                onClick={() => handleDeleteCandidate(candidate._id || candidate.id)}
+                                                className="text-red-600 hover:text-red-900 bg-red-50 hover:bg-red-100 px-3 py-1 rounded-md mr-2 transition-colors inline-flex items-center"
+                                                title="Delete Candidate"
+                                            >
+                                                <Trash2 className="w-4 h-4 mr-1" /> Remove
                                             </button>
                                             <button
                                                 onClick={() => navigate(`/admin/candidate/${candidate._id || candidate.id}`)}
@@ -186,13 +361,35 @@ export default function AdminDashboard() {
                                 </div>
                             ) : (
                                 chatMessages.map((msg, idx) => (
-                                    <div key={idx} className={`flex ${msg.sender === 'admin' ? 'justify-end' : 'justify-start'}`}>
+                                    <div key={idx} className={`flex items-center gap-2 ${msg.sender === 'admin' ? 'justify-end' : 'justify-start'} group hover:bg-slate-100/50 rounded-lg p-1 transition-colors`}>
+                                        {/* Admin Delete (Left) */}
+                                        {msg.sender === 'admin' && (
+                                            <button
+                                                onClick={() => handleDeleteMessage(idx)}
+                                                className="opacity-0 group-hover:opacity-100 p-1.5 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-full transition-all"
+                                                title="Delete Message"
+                                            >
+                                                <Trash2 className="w-4 h-4" />
+                                            </button>
+                                        )}
+
                                         <div className={`py-3 px-4 max-w-[80%] rounded-2xl shadow-sm text-sm ${msg.sender === 'admin'
                                             ? 'bg-blue-600 text-white rounded-tr-none'
                                             : 'bg-white border border-slate-200 text-slate-800 rounded-tl-none'
                                             }`}>
                                             {msg.text}
                                         </div>
+
+                                        {/* Candidate Delete (Right) - Admin can delete these too */}
+                                        {msg.sender !== 'admin' && (
+                                            <button
+                                                onClick={() => handleDeleteMessage(idx)}
+                                                className="opacity-0 group-hover:opacity-100 p-1.5 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-full transition-all"
+                                                title="Delete Message"
+                                            >
+                                                <Trash2 className="w-4 h-4" />
+                                            </button>
+                                        )}
                                     </div>
                                 ))
                             )}

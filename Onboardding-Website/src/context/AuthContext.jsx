@@ -15,9 +15,11 @@ export const AuthProvider = ({ children }) => {
         setLoading(false);
     }, []);
 
+    const API_BASE = import.meta.env.VITE_API_URL || '';
+
     const loginAdmin = async (email, password) => {
         try {
-            const response = await fetch('/api/auth/login', {
+            const response = await fetch(`${API_BASE}/api/auth/login`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ email, password }),
@@ -36,19 +38,30 @@ export const AuthProvider = ({ children }) => {
         }
     };
 
-    const sendOtp = async (email) => {
+    const loginCandidate = async (email) => {
         try {
-            await fetch('/api/auth/otp/send', {
+            const response = await fetch(`${API_BASE}/api/auth/candidate/login`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ email }),
             });
-            return true;
+            if (!response.ok) {
+                const errorData = await response.json().catch(() => ({}));
+                throw new Error(errorData.message || 'Login failed');
+            }
+            const data = await response.json();
+            setUser(data.user);
+            localStorage.setItem('onboarding_user', JSON.stringify(data.user));
+            return { success: true };
         } catch (error) {
-            console.error(error);
-            return false;
+            console.error('Candidate Login Error:', error);
+            return { success: false, message: error.message };
         }
     };
+
+    // Deprecated: OTP Functions (kept for reference if needed later, but unused)
+    const sendOtp = async (email) => { return true; };
+    // const verifyOtp = ... (removed to clean up)
 
     const updateCandidate = async (updateData) => {
         try {
@@ -56,7 +69,7 @@ export const AuthProvider = ({ children }) => {
             const email = user?.email || updateData.email;
             if (!email) throw new Error('No user email found to update');
 
-            const response = await fetch('/api/candidates/update', {
+            const response = await fetch(`${API_BASE}/api/candidates/update`, {
                 method: 'PUT',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ email, ...updateData }),
@@ -83,7 +96,7 @@ export const AuthProvider = ({ children }) => {
 
     const verifyOtp = async (email, otp) => {
         try {
-            const response = await fetch('/api/auth/otp/verify', {
+            const response = await fetch(`${API_BASE}/api/auth/otp/verify`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ email, otp }),
@@ -106,7 +119,7 @@ export const AuthProvider = ({ children }) => {
 
     const register = async (userData) => {
         try {
-            const response = await fetch('/api/auth/register', {
+            const response = await fetch(`${API_BASE}/api/auth/register`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(userData),
@@ -127,7 +140,7 @@ export const AuthProvider = ({ children }) => {
     };
 
     return (
-        <AuthContext.Provider value={{ user, loginAdmin, sendOtp, verifyOtp, register, updateCandidate, logout, loading }}>
+        <AuthContext.Provider value={{ user, loginAdmin, loginCandidate, sendOtp, verifyOtp, register, updateCandidate, logout, loading }}>
             {children}
         </AuthContext.Provider>
     );

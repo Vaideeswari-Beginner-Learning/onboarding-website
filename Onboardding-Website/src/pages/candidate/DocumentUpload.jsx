@@ -81,11 +81,37 @@ function DocumentUploadContent() {
     const handleFileSelect = (docId, file) => {
         if (!file) return;
 
-        setUploads(prev => ({
-            ...prev,
-            [docId]: { file, progress: 0, status: 'uploading' }
-        }));
+        // --- Validation Logic ---
+        const fileName = file.name.toLowerCase();
+        if (docId === 'aadhaar' && !fileName.includes('aadhaar')) {
+            alert("⚠️ Invalid File: Please upload a valid Aadhaar Card.\nThe filename must contain 'aadhaar' (e.g., 'my_aadhaar.pdf').");
+            return;
+        }
+        if (docId === 'pan' && !fileName.includes('pan')) {
+            alert("⚠️ Invalid File: Please upload a valid PAN Card.\nThe filename must contain 'pan' (e.g., 'pan_card.jpg').");
+            return;
+        }
+        // ------------------------
 
+        // Convert to Base64
+        const reader = new FileReader();
+        reader.onload = (e) => {
+            const base64String = e.target.result;
+            setUploads(prev => ({
+                ...prev,
+                [docId]: {
+                    file,
+                    base64: base64String, // Store Base64
+                    progress: 0,
+                    status: 'uploading'
+                }
+            }));
+            simulateUpload(docId);
+        };
+        reader.readAsDataURL(file);
+    };
+
+    const simulateUpload = (docId) => {
         let progress = 0;
         const interval = setInterval(() => {
             progress += 10;
@@ -320,7 +346,7 @@ function DocumentUploadContent() {
                                                     type: doc.label,
                                                     size: (uploads[doc.id]?.file?.size / (1024 * 1024)).toFixed(2) + ' MB' || '1.2 MB',
                                                     status: 'Submitted',
-                                                    url: URL.createObjectURL(uploads[doc.id]?.file || new Blob())
+                                                    url: uploads[doc.id]?.base64 || '' // Use Base64 instead of blob URL
                                                 }));
 
                                                 const result = await updateCandidate({

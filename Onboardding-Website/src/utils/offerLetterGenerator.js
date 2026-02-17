@@ -14,6 +14,45 @@ export const generateOfferLetter = async (candidate) => {
     const adminName = offer.adminName || "HR Manager";
     const employeeName = offer.employeeName || candidate.name;
 
+    // --- Helper: Parse CTC & Calculate Components (Moved to top) ---
+    const parseCTC = (ctcStr) => {
+        if (!ctcStr) return 0;
+        let val = parseFloat(ctcStr.toString().replace(/[^0-9.]/g, ''));
+        // If "LPA" is present OR value is small (e.g. 3, 4.5), assume Lakhs
+        if (ctcStr.toString().toLowerCase().includes('lpa') || val < 100) {
+            val = val * 100000;
+        }
+        return val || 0;
+    };
+
+    const annualCTC = parseCTC(offer.ctc);
+    const monthlyCTC = annualCTC / 12;
+
+    // Salary Structure
+    const basicYearly = annualCTC * 0.50;
+    const basicMonthly = basicYearly / 12;
+
+    const hraYearly = basicYearly * 0.40;
+    const hraMonthly = hraYearly / 12;
+
+    // Deductions
+    const pfMonthly = Math.min(basicMonthly * 0.12, 1800);
+    const pfYearly = pfMonthly * 12;
+
+    const ptMonthly = 200;
+    const ptYearly = 2400;
+
+    // Special: Balancing figure
+    const specialYearly = annualCTC - basicYearly - hraYearly;
+    const specialMonthly = specialYearly / 12;
+
+    const totalDeductionsMonthly = pfMonthly + ptMonthly;
+    const totalDeductionsYearly = pfYearly + ptYearly;
+
+    const netMonthly = monthlyCTC - totalDeductionsMonthly;
+    const netYearly = annualCTC - totalDeductionsYearly;
+
+
     // --- Helper to load image ---
     const loadImage = (url) => {
         return new Promise((resolve, reject) => {
@@ -129,7 +168,7 @@ export const generateOfferLetter = async (candidate) => {
     doc.setFont("helvetica", "bold");
     doc.setFontSize(12);
     doc.setTextColor(...primaryColor);
-    doc.text("PROVISIONAL OFFER LETTER", pageWidth / 2, currentY, { align: 'center' });
+    doc.text("OFFER LETTER", pageWidth / 2, currentY, { align: 'center' });
     doc.setLineWidth(0.5);
     doc.line((pageWidth / 2) - 30, currentY + 2, (pageWidth / 2) + 30, currentY + 2); // Underline title
 
@@ -168,7 +207,8 @@ export const generateOfferLetter = async (candidate) => {
     };
 
     drawRow("Role / Designation", offer.jobRole || 'Employee');
-    drawRow("Annual CTC", offer.ctc || 'As per Discussion');
+    const ctcLPA = (annualCTC / 100000).toFixed(2) + " LPA";
+    drawRow("Annual CTC", ctcLPA);
     drawRow("Date of Joining", offer.joiningDate || 'Immediate');
     drawRow("Work Location", offer.location || 'Bangalore');
 
@@ -199,8 +239,8 @@ export const generateOfferLetter = async (candidate) => {
     }
 
     // --- Closing Paragraph ---
-    // Ensure space for closing paragraph
-    if (currentY > pageHeight - 60) {
+    // Ensure space for closing paragraph (Adjusted threshold to 40)
+    if (currentY > pageHeight - 40) {
         doc.addPage();
         drawPageLayout(false);
         currentY = 40;
@@ -209,75 +249,61 @@ export const generateOfferLetter = async (candidate) => {
     const closing = "This offer is valid for 3 days. Please sign and return the duplicate copy of this letter as a token of your acceptance. The detailed terms and conditions of your employment are annexed to this letter.";
     const closingLines = doc.splitTextToSize(closing, pageWidth - (margin * 2));
     doc.text(closingLines, margin, currentY);
-
     // --- Footer Note ---
     doc.setFontSize(9);
     doc.setFont("helvetica", "italic");
     doc.setTextColor(100);
-    doc.text("(Detailed Compensation & Terms continued in Annexures)", margin, pageHeight - 25);
+    // Draw footer at bottom of current page now, or just leave standard footer
+    // doc.text("(Detailed Compensation & Terms continued in Annexures)", margin, pageHeight - 25); 
 
 
-    // ================= PAGE 2: SALARY TABLE =================
-    doc.addPage();
-    drawPageLayout(false);
+    // ================= ANNEXURE A: COMPENSATION DETAILS =================
 
-    let yPos = 30;
+    // Check if enough space for Header + at least 4 rows (~60 units)
+    // If not, explicitly add page.
+    if (currentY > pageHeight - 60) {
+        doc.addPage();
+        drawPageLayout(false);
+        currentY = 30; // Standard top margin
+    } else {
+        currentY += 15; // Gap before table
+        // Draw separate line if on same page
+        doc.setDrawColor(200);
+        doc.setLineWidth(0.5);
+        doc.line(margin, currentY - 5, pageWidth - margin, currentY - 5);
+    }
+
+    let yPos = currentY;
 
     // --- Helper: Parse CTC & Calculate Components ---
-    const parseCTC = (ctcStr) => {
-        if (!ctcStr) return 0;
-        let val = parseFloat(ctcStr.toString().replace(/[^0-9.]/g, ''));
-        // If "LPA" is present OR value is small (e.g. 3, 4.5), assume Lakhs
-        if (ctcStr.toString().toLowerCase().includes('lpa') || val < 100) {
-            val = val * 100000;
-        }
-        return val || 0;
-    };
+    // (Calculations moved to top of file)
 
-    const annualCTC = parseCTC(offer.ctc);
-    const monthlyCTC = annualCTC / 12;
-
-    // Salary Structure
-    // Basic: 50%
-    // HRA: 40% of Basic
-    const basicYearly = annualCTC * 0.50;
-    const basicMonthly = basicYearly / 12;
-
-    const hraYearly = basicYearly * 0.40;
-    const hraMonthly = hraYearly / 12;
-
-    // Deductions
-    // PF: 12% of Basic (Max 1800)
-    const pfMonthly = Math.min(basicMonthly * 0.12, 1800);
-    const pfYearly = pfMonthly * 12;
-
-    // PT: 200/mo
-    const ptMonthly = 200;
-    const ptYearly = 2400;
-
-    // Special: Balancing figure
-    const specialYearly = annualCTC - basicYearly - hraYearly;
-    const specialMonthly = specialYearly / 12;
-
-    const totalDeductionsMonthly = pfMonthly + ptMonthly;
-    const totalDeductionsYearly = pfYearly + ptYearly;
-
-    const netMonthly = monthlyCTC - totalDeductionsMonthly;
-    const netYearly = annualCTC - totalDeductionsYearly;
-
+    // Format Currency Helper
     const formatCurrency = (amount) => {
         return Math.round(amount).toLocaleString('en-IN', { style: 'currency', currency: 'INR' }).replace('₹', 'Rs. ');
     };
 
-    // --- Draw Table Header ---
-    doc.setFont("helvetica", "bold");
-    doc.setFontSize(14);
-    doc.setTextColor(...primaryColor);
-    doc.text("ANNEXURE A : COMPENSATION DETAILS", margin, yPos);
-    doc.setDrawColor(...accentColor);
-    doc.setLineWidth(1);
-    doc.line(margin, yPos + 3, pageWidth - margin, yPos + 3);
-    yPos += 15;
+    const drawTableHeader = (y) => {
+        doc.setFont("helvetica", "bold");
+        doc.setFontSize(14);
+        doc.setTextColor(...primaryColor);
+        doc.text("ANNEXURE A : COMPENSATION DETAILS", margin, y);
+        doc.setDrawColor(...accentColor);
+        doc.setLineWidth(1);
+        doc.line(margin, y + 3, pageWidth - margin, y + 3);
+
+        y += 15;
+
+        doc.setFillColor(240, 240, 240);
+        doc.rect(col1X, y, (pageWidth - (margin * 2)), rowHeight, 'F');
+        doc.setFontSize(10);
+        doc.setTextColor(0);
+        doc.text("Salary Component", col1X + 5, y + 7);
+        doc.text("Monthly (INR)", col2X + 5, y + 7);
+        doc.text("Annual (INR)", col3X + 5, y + 7);
+
+        return y + rowHeight;
+    };
 
     // Table Columns
     const col1X = margin;
@@ -285,17 +311,19 @@ export const generateOfferLetter = async (candidate) => {
     const col3X = margin + 130;
     const rowHeight = 10;
 
-    doc.setFillColor(240, 240, 240);
-    doc.rect(col1X, yPos, (pageWidth - (margin * 2)), rowHeight, 'F');
-    doc.setFontSize(10);
-    doc.setTextColor(0);
-    doc.text("Salary Component", col1X + 5, yPos + 7);
-    doc.text("Monthly (INR)", col2X + 5, yPos + 7);
-    doc.text("Annual (INR)", col3X + 5, yPos + 7);
-    yPos += rowHeight;
+    // Draw Initial Header
+    yPos = drawTableHeader(yPos);
 
-    // Row Helper
+    // Row Helper with Page Break support
     const drawTableRow = (label, monthly, annual, isBold = false) => {
+        // Check for page break
+        if (yPos > pageHeight - 30) {
+            doc.addPage();
+            drawPageLayout(false);
+            yPos = 30;
+            yPos = drawTableHeader(yPos); // Redraw header on new page
+        }
+
         if (isBold) doc.setFont("helvetica", "bold");
         else doc.setFont("helvetica", "normal");
 
@@ -319,7 +347,13 @@ export const generateOfferLetter = async (candidate) => {
     drawTableRow("Special Allowance", specialMonthly, specialYearly);
     drawTableRow("Gross Salary", monthlyCTC, annualCTC, true);
 
-    // Deductions Header
+    // Deductions Header check
+    if (yPos > pageHeight - 30) {
+        doc.addPage();
+        drawPageLayout(false);
+        yPos = 30; // Just start new section
+    }
+
     doc.setFillColor(250, 250, 250);
     doc.rect(col1X, yPos, (pageWidth - (margin * 2)), rowHeight, 'F');
     doc.setFont("helvetica", "bold");
@@ -333,6 +367,14 @@ export const generateOfferLetter = async (candidate) => {
     drawTableRow("Total Deductions", totalDeductionsMonthly, totalDeductionsYearly, true);
 
     yPos += 2;
+
+    // Net Salary Logic
+    if (yPos > pageHeight - 30) {
+        doc.addPage();
+        drawPageLayout(false);
+        yPos = 30;
+    }
+
     // Net Salary Row (Highlighted)
     doc.setFillColor(...primaryColor);
     doc.rect(col1X, yPos, (pageWidth - (margin * 2)), rowHeight + 2, 'F');
@@ -349,11 +391,21 @@ export const generateOfferLetter = async (candidate) => {
     doc.text("* Note: Income Tax deductions will be applicable based on the tax regime selected.", margin, yPos);
 
 
-    // ================= PAGE 3: TERMS =================
-    doc.addPage();
-    drawPageLayout(false);
+    // ================= ANNEXURE B: TERMS =================
+    // Compact Layout Check: If enough space remains on this page, continue here.
+    // We need approx 40 units for Header + 1st Term.
+    yPos += 15;
 
-    yPos = 30;
+    if (yPos > pageHeight - 50) {
+        doc.addPage();
+        drawPageLayout(false);
+        yPos = 30;
+    } else {
+        // Draw Separator if on same page
+        doc.setDrawColor(200);
+        doc.setLineWidth(0.5);
+        doc.line(margin, yPos - 10, pageWidth - margin, yPos - 10);
+    }
 
     // Annexure Header
     doc.setFont("helvetica", "bold");
@@ -380,7 +432,7 @@ export const generateOfferLetter = async (candidate) => {
     ];
 
     terms.forEach(term => {
-        if (yPos > pageHeight - 70) {
+        if (yPos > pageHeight - 40) { // Check space
             doc.addPage();
             drawPageLayout(false);
             yPos = 30;
@@ -412,19 +464,19 @@ export const generateOfferLetter = async (candidate) => {
 
     // Admin
     doc.setFont("helvetica", "bold");
-    doc.text(`For ${companyName}`, margin, yPos);
+    doc.text(`FORGE INDIA CONNECT PVT.LTD`, margin, yPos);
     doc.setFont("helvetica", "normal");
     doc.setFontSize(9);
-    doc.text("Authorized Signatory", margin, yPos + 5);
-    doc.text(adminName, margin, yPos + 15);
+    doc.text("Authorized Signatory", margin, yPos + 4);
+    doc.text(adminName, margin, yPos + 10);
 
     // Candidate
     doc.setFont("helvetica", "bold");
     doc.setFontSize(10);
     doc.text("Accepted By:", pageWidth - margin - 50, yPos);
     doc.setFont("helvetica", "normal");
-    doc.text(employeeName, pageWidth - margin - 50, yPos + 15);
-    doc.text(`Date: ${today}`, pageWidth - margin - 50, yPos + 20);
+    doc.text(employeeName, pageWidth - margin - 50, yPos + 10);
+    doc.text(`Date: ${today}`, pageWidth - margin - 50, yPos + 15);
 
     doc.save(`Offer_Letter_${employeeName.replace(/\s+/g, '_')}.pdf`);
 };
