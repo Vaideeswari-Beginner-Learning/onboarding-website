@@ -12,10 +12,27 @@ const PORT = process.env.PORT || 5000;
 
 app.use(cors({
     origin: (origin, callback) => {
+        const allowedOrigins = [
+            'http://localhost:5173',
+            'https://fic-onboarding-website.vercel.app', // Main Vercel Domain
+            'https://onboarding-website.vercel.app',    // Potential alternative name
+            'https://fic-onboarding-website-git-main-vaideeswaris-projects.vercel.app' // Vercel Preview/Git URLs
+        ];
+
         // Allow requests with no origin (like mobile apps or curl requests)
         if (!origin) return callback(null, true);
-        // Allow any origin for now to ensure Vercel deployment works
-        // In production, you might want to restrict this to specific domains
+
+        // Allow any Vercel deployment (dynamic)
+        if (origin.includes('.vercel.app')) {
+            return callback(null, true);
+        }
+
+        // Check against allowed list
+        if (allowedOrigins.includes(origin) || origin.includes('localhost')) {
+            return callback(null, true);
+        }
+
+        // Fallback: Allow all for troubleshooting (Current behavior, but confirming it)
         callback(null, true);
     },
     methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
