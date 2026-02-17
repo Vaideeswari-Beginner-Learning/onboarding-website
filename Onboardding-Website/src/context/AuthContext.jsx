@@ -16,6 +16,9 @@ export const AuthProvider = ({ children }) => {
     }, []);
 
     const API_BASE = import.meta.env.VITE_API_URL || '';
+    console.log('DEBUG: VITE_API_URL =', import.meta.env.VITE_API_URL);
+    console.log('DEBUG: API_BASE =', API_BASE);
+
 
     const loginAdmin = async (email, password) => {
         try {
