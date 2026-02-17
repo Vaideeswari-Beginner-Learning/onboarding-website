@@ -10,39 +10,24 @@ dotenv.config();
 const app = express();
 const PORT = process.env.PORT || 5000;
 
+// Simplified CORS for debugging
 app.use(cors({
-    origin: (origin, callback) => {
-        const allowedOrigins = [
-            'http://localhost:5173',
-            'https://fic-onboarding-website.vercel.app', // Main Vercel Domain
-            'https://onboarding-website.vercel.app',    // Potential alternative name
-            'https://fic-onboarding-website-git-main-vaideeswaris-projects.vercel.app' // Vercel Preview/Git URLs
-        ];
-
-        // Log the origin for debugging on the server
-        console.log(`Incoming request origin: ${origin}`);
-
-        // Allow requests with no origin (like mobile apps or curl requests)
-        if (!origin) return callback(null, true);
-
-        // Allow any Vercel deployment (dynamic)
-        if (origin.endsWith('.vercel.app')) {
-            return callback(null, true);
-        }
-
-        // Check against allowed list
-        if (allowedOrigins.includes(origin) || origin.includes('localhost')) {
-            return callback(null, true);
-        }
-
-        // Block others
-        console.log(`Blocked by CORS: ${origin}`);
-        callback(new Error('Not allowed by CORS'));
-    },
+    origin: true, // Reflects the request origin
     methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-    credentials: true
+    credentials: true,
+    allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With'] // Explicitly allow common headers
 }));
 app.use(express.json({ limit: '10mb' }));
+
+// Health Check Endpoint to verify deployment
+app.get('/api/health-check', (req, res) => {
+    res.json({
+        status: 'ok',
+        version: '1.2.0-cors-fix',
+        timestamp: new Date().toISOString(),
+        cors_mode: 'origin:true'
+    });
+});
 
 // Connect to MongoDB
 mongoose.connect(process.env.MONGO_URI)
