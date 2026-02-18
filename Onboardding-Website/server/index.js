@@ -11,6 +11,7 @@ const app = express();
 const PORT = process.env.PORT || 5000;
 
 console.log(`Starting server... CWD: ${process.cwd()}`);
+console.log(`DEPLOYMENT SUCCESS v2.0 - CORS FIXED`);
 console.log(`PORT: ${PORT}`);
 
 // MANUAL CORS - Force Allow All
