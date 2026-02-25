@@ -10,11 +10,36 @@ import Candidate from './models/Candidate.js';
 import Message from './models/Message.js';
 import { getTransporter, resetTransporter, sendAutomaticOfferEmail } from './utils/mailer.js';
 import { handleAutomatedOnboarding } from './controllers/onboardingController.js';
+import jwt from 'jsonwebtoken';
 
 dotenv.config();
+const JWT_SECRET = process.env.JWT_SECRET || 'fallback_secret';
 
 const app = express();
 const PORT = process.env.PORT || 5000;
+
+// Middleware to verify JWT Token
+const authenticateToken = (req, res, next) => {
+    const authHeader = req.headers['authorization'];
+    const token = authHeader && authHeader.split(' ')[1];
+
+    if (!token) return res.status(401).json({ message: 'Access Denied: No Token Provided' });
+
+    jwt.verify(token, JWT_SECRET, (err, user) => {
+        if (err) return res.status(403).json({ message: 'Access Denied: Invalid or Expired Token' });
+        req.user = user;
+        next();
+    });
+};
+
+// Middleware to verify Admin Role
+const isAdmin = (req, res, next) => {
+    if (req.user && req.user.role === 'admin') {
+        next();
+    } else {
+        res.status(403).json({ message: 'Access Denied: Admin privileges required' });
+    }
+};
 
 console.log(`Starting server... CWD: ${process.cwd()}`);
 console.log(`DEPLOYMENT SUCCESS v2.0 - CORS FIXED`);
@@ -112,7 +137,14 @@ app.post('/api/auth/login', (req, res) => {
 
         // Hardcoded admin for demo
         if (email === 'info@forgeindiaconnect.com' && password === 'Forgeindia@09') {
+            const token = jwt.sign(
+                { id: 'ADMIN-001', email: 'info@forgeindiaconnect.com', role: 'admin' },
+                JWT_SECRET,
+                { expiresIn: '24h' }
+            );
+
             res.json({
+                token,
                 user: {
                     id: 'ADMIN-001',
                     name: 'Admin',
@@ -159,7 +191,13 @@ app.post('/api/auth/candidate/login', async (req, res) => {
             await candidate.save();
         }
 
-        res.json({ user: candidate });
+        const token = jwt.sign(
+            { id: candidate.id, email: candidate.email, role: 'candidate' },
+            JWT_SECRET,
+            { expiresIn: '720h' } // 30 days for candidates
+        );
+
+        res.json({ token, user: candidate });
     } catch (error) {
         console.error('Candidate Login Error:', error);
         res.status(500).json({ message: 'Server error during login' });
@@ -232,7 +270,13 @@ app.post('/api/auth/otp/verify', async (req, res) => {
                 await candidate.save();
             }
 
-            res.json({ user: candidate });
+            const token = jwt.sign(
+                { id: candidate.id, email: candidate.email, role: 'candidate' },
+                JWT_SECRET,
+                { expiresIn: '720h' }
+            );
+
+            res.json({ token, user: candidate });
         } catch (error) {
             console.error('OTP Verification Error:', error);
             res.status(500).json({ message: 'Server error during verification' });
@@ -243,7 +287,7 @@ app.post('/api/auth/otp/verify', async (req, res) => {
 });
 
 // Candidate Update Details
-app.put('/api/candidates/update', async (req, res) => {
+app.put('/api/candidates/update', authenticateToken, async (req, res) => {
     const { email, ...updateData } = req.body;
 
     try {
@@ -264,7 +308,7 @@ app.put('/api/candidates/update', async (req, res) => {
 });
 
 // Request Offer Letter (Candidate)
-app.post('/api/candidates/request-offer', async (req, res) => {
+app.post('/api/candidates/request-offer', authenticateToken, async (req, res) => {
     const { email } = req.body;
     try {
         const candidate = await Candidate.findOneAndUpdate(
@@ -285,7 +329,7 @@ app.post('/api/candidates/request-offer', async (req, res) => {
 });
 
 // Generate Offer Letter (Admin)
-app.post('/api/admin/generate-offer', async (req, res) => {
+app.post('/api/admin/generate-offer', authenticateToken, isAdmin, async (req, res) => {
     const { candidateId, offerDetails } = req.body;
     try {
         const candidate = await Candidate.findByIdAndUpdate(
@@ -307,7 +351,7 @@ app.post('/api/admin/generate-offer', async (req, res) => {
 });
 
 // Get Candidates (for Admin)
-app.get('/api/candidates', async (req, res) => {
+app.get('/api/candidates', authenticateToken, isAdmin, async (req, res) => {
     try {
         const candidates = await Candidate.find({ role: 'candidate' });
         res.json(candidates);
@@ -318,7 +362,7 @@ app.get('/api/candidates', async (req, res) => {
 });
 
 // Get Single Candidate by ID
-app.get('/api/candidates/:id', async (req, res) => {
+app.get('/api/candidates/:id', authenticateToken, async (req, res) => {
     try {
         const candidate = await Candidate.findOne({
             $or: [
@@ -338,7 +382,7 @@ app.get('/api/candidates/:id', async (req, res) => {
 });
 
 // Delete Candidate
-app.delete('/api/candidates/:id', async (req, res) => {
+app.delete('/api/candidates/:id', authenticateToken, isAdmin, async (req, res) => {
     try {
         const candidate = await Candidate.findOneAndDelete({
             $or: [
@@ -362,7 +406,7 @@ app.delete('/api/candidates/:id', async (req, res) => {
 });
 
 // Retention Policy Check (90 Days)
-app.get('/api/admin/check-retention', async (req, res) => {
+app.get('/api/admin/check-retention', authenticateToken, isAdmin, async (req, res) => {
     try {
         const ninetyDaysAgo = new Date();
         ninetyDaysAgo.setDate(ninetyDaysAgo.getDate() - 90);
@@ -408,7 +452,7 @@ app.get('/api/admin/check-retention', async (req, res) => {
 
 // Email transporter is handled by utils/mailer.js
 
-app.post('/api/admin/send-offer-email', async (req, res) => {
+app.post('/api/admin/send-offer-email', authenticateToken, isAdmin, async (req, res) => {
     const { candidateId, pdfBase64, customEmail, appBaseUrl } = req.body;
     try {
         const candidate = await Candidate.findById(candidateId);
@@ -578,7 +622,7 @@ app.post('/api/admin/send-offer-email', async (req, res) => {
 // --- Chat Routes ---
 
 // Send Message
-app.post('/api/messages', async (req, res) => {
+app.post('/api/messages', authenticateToken, async (req, res) => {
     let { sender, senderName, receiver, text } = req.body;
     try {
         // Normalize emails
@@ -595,7 +639,7 @@ app.post('/api/messages', async (req, res) => {
 });
 
 // Get Conversation (between current user and admin)
-app.get('/api/messages/:userEmail', async (req, res) => {
+app.get('/api/messages/:userEmail', authenticateToken, async (req, res) => {
     const userEmail = req.params.userEmail.trim().toLowerCase();
     try {
         const messages = await Message.find({
@@ -614,7 +658,7 @@ app.get('/api/messages/:userEmail', async (req, res) => {
 
 // Admin: Get List of Active Conversations
 // --- PDF Sharing: Store and Serve PDF links ---
-app.post('/api/admin/save-offer-pdf', async (req, res) => {
+app.post('/api/admin/save-offer-pdf', authenticateToken, isAdmin, async (req, res) => {
     const { candidateId, pdfBase64 } = req.body;
     try {
         const candidate = await Candidate.findByIdAndUpdate(candidateId, {
@@ -654,7 +698,7 @@ app.get('/api/public/offer-pdf/:id', async (req, res) => {
 // --- Email Setup Verification & Update ---
 
 // Test Connection Endpoint
-app.post('/api/admin/test-email-connection', async (req, res) => {
+app.post('/api/admin/test-email-connection', authenticateToken, isAdmin, async (req, res) => {
     const { email, password } = req.body;
     try {
         if (!email || !password) {
@@ -678,7 +722,7 @@ app.post('/api/admin/test-email-connection', async (req, res) => {
     }
 });
 
-app.post('/api/admin/update-email-setup', async (req, res) => {
+app.post('/api/admin/update-email-setup', authenticateToken, isAdmin, async (req, res) => {
     const { email, password } = req.body;
     try {
         if (!email || !password) {
@@ -716,7 +760,7 @@ app.post('/api/admin/update-email-setup', async (req, res) => {
     }
 });
 
-app.get('/api/admin/conversations', async (req, res) => {
+app.get('/api/admin/conversations', authenticateToken, isAdmin, async (req, res) => {
     try {
         const senders = await Message.distinct('sender', { sender: { $ne: 'admin' } });
         const receivers = await Message.distinct('receiver', { receiver: { $ne: 'admin' } });
