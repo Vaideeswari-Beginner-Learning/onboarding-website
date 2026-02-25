@@ -18,7 +18,10 @@ export default function ChatSupport() {
         const loadMessages = async () => {
             try {
                 const normalizedEmail = user.email.trim().toLowerCase();
-                const response = await fetch(`${API_BASE}/api/messages/${normalizedEmail}`);
+                const token = localStorage.getItem('onboarding_token');
+                const response = await fetch(`${API_BASE}/api/messages/${normalizedEmail}`, {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
                 if (response.ok) {
                     const data = await response.json();
                     setMessages(data);
@@ -60,9 +63,13 @@ export default function ChatSupport() {
 
         try {
             console.log("ChatSupport: Sending message...");
+            const token = localStorage.getItem('onboarding_token');
             const res = await fetch(`${API_BASE}/api/messages`, {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${token}`
+                },
                 body: JSON.stringify(newMessage)
             });
             if (res.ok) {

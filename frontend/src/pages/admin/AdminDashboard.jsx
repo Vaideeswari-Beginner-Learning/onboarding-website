@@ -21,10 +21,12 @@ export default function AdminDashboard() {
     useEffect(() => {
         const fetchCandidates = async () => {
             try {
-                const response = await fetch(`${API_BASE}/api/candidates`);
+                const token = localStorage.getItem('onboarding_token');
+                const response = await fetch(`${API_BASE}/api/candidates`, {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
                 if (response.ok) {
                     const data = await response.json();
-                    // Reverse to show newest first, assuming backend returns chronological order
                     setCandidates(data.reverse());
                 } else {
                     console.error('Failed to fetch candidates');
@@ -36,7 +38,10 @@ export default function AdminDashboard() {
 
         const checkRetention = async () => {
             try {
-                const response = await fetch(`${API_BASE}/api/admin/check-retention`);
+                const token = localStorage.getItem('onboarding_token');
+                const response = await fetch(`${API_BASE}/api/admin/check-retention`, {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
                 if (response.ok) {
                     const data = await response.json();
                     if (data.clearedCount > 0) {
@@ -66,8 +71,10 @@ export default function AdminDashboard() {
     const handleDeleteCandidate = async (candidateId) => {
         if (window.confirm('Are you sure you want to permanently delete this candidate? This action cannot be undone.')) {
             try {
+                const token = localStorage.getItem('onboarding_token');
                 const response = await fetch(`${API_BASE}/api/candidates/${candidateId}`, {
                     method: 'DELETE',
+                    headers: { 'Authorization': `Bearer ${token}` }
                 });
 
                 if (response.ok) {
@@ -93,7 +100,10 @@ export default function AdminDashboard() {
         const loadChat = async () => {
             // Load from backend
             try {
-                const response = await fetch(`${API_BASE}/api/messages/${selectedChatCandidate.email}`);
+                const token = localStorage.getItem('onboarding_token');
+                const response = await fetch(`${API_BASE}/api/messages/${selectedChatCandidate.email}`, {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
                 if (response.ok) {
                     const data = await response.json();
                     setChatMessages(data);
@@ -138,9 +148,13 @@ export default function AdminDashboard() {
 
         // Send to backend
         try {
+            const token = localStorage.getItem('onboarding_token');
             await fetch(`${API_BASE}/api/messages`, {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${token}`
+                },
                 body: JSON.stringify({
                     sender: 'admin',
                     senderName: user?.name || 'Admin',

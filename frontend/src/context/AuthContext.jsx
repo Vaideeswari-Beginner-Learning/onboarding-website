@@ -102,9 +102,13 @@ export const AuthProvider = ({ children }) => {
             const email = user?.email || updateData.email;
             if (!email) throw new Error('No user email found to update');
 
+            const token = localStorage.getItem('onboarding_token');
             const response = await fetch(`${API_BASE}/api/candidates/update`, {
                 method: 'PUT',
-                headers: { 'Content-Type': 'application/json' },
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${token}`
+                },
                 body: JSON.stringify({ email, ...updateData }),
             });
 
@@ -189,12 +193,21 @@ export const AuthProvider = ({ children }) => {
 
     const submitOnboarding = async (name, email) => {
         try {
+            const token = localStorage.getItem('onboarding_token');
             const response = await fetch(`${API_BASE}/api/onboard`, {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${token}`
+                },
                 body: JSON.stringify({ name, email }),
             });
-            return await response.json();
+            const text = await response.text();
+            try {
+                return JSON.parse(text);
+            } catch (e) {
+                return { success: false, message: "Invalid server response" };
+            }
         } catch (error) {
             console.error('Submit Onboarding Error:', error);
             return { success: false, message: error.message };

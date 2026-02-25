@@ -33,7 +33,10 @@ export default function CandidateDetail() {
     useEffect(() => {
         const fetchCandidate = async () => {
             try {
-                const response = await fetch(`${API_BASE}/api/candidates/${id}`);
+                const token = localStorage.getItem('onboarding_token');
+                const response = await fetch(`${API_BASE}/api/candidates/${id}`, {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
                 if (response.ok) {
                     const data = await response.json();
                     setCandidate(data);
@@ -79,7 +82,10 @@ export default function CandidateDetail() {
         const fetchMessages = async () => {
             try {
                 const normalizedEmail = candidate.email.trim().toLowerCase();
-                const response = await fetch(`${API_BASE}/api/messages/${normalizedEmail}`);
+                const token = localStorage.getItem('onboarding_token');
+                const response = await fetch(`${API_BASE}/api/messages/${normalizedEmail}`, {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
                 if (response.ok) {
                     const data = await response.json();
                     setMessages(data);
@@ -116,9 +122,13 @@ export default function CandidateDetail() {
         setChatInput('');
 
         try {
+            const token = localStorage.getItem('onboarding_token');
             await fetch(`${API_BASE}/api/messages`, {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${token}`
+                },
                 body: JSON.stringify(newMessage)
             });
         } catch (error) {
@@ -180,9 +190,13 @@ export default function CandidateDetail() {
         if (e) e.preventDefault();
         // 1. Save offer details to database locally first
         try {
+            const token = localStorage.getItem('onboarding_token');
             const response = await fetch(`${API_BASE}/api/admin/generate-offer`, {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${token}`
+                },
                 body: JSON.stringify({
                     candidateId: candidate._id,
                     offerDetails: offerForm
@@ -212,9 +226,13 @@ export default function CandidateDetail() {
             // 2. Automatically trigger the email sending process
             const pdfBase64 = await generateOfferLetterBase64({ ...candidate, offerDetails: offerForm });
 
+            const token = localStorage.getItem('onboarding_token');
             const emailResponse = await fetch(`${API_BASE}/api/admin/send-offer-email`, {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${token}`
+                },
                 body: JSON.stringify({
                     candidateId: candidate._id,
                     pdfBase64,
@@ -250,9 +268,13 @@ export default function CandidateDetail() {
             const pdfBase64 = await generateOfferLetterBase64({ ...candidate, offerDetails: offerForm });
 
             // Save PDF to database first so the link in Gmail works!
+            const token = localStorage.getItem('onboarding_token');
             await fetch(`${API_BASE}/api/admin/save-offer-pdf`, {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${token}`
+                },
                 body: JSON.stringify({
                     candidateId: candidate._id,
                     pdfBase64

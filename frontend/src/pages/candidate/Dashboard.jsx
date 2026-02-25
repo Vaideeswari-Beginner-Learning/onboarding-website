@@ -33,9 +33,13 @@ export default function CandidateDashboard() {
 
     const handleRequestOfferLetter = async () => {
         try {
+            const token = localStorage.getItem('onboarding_token');
             const response = await fetch(`${API_BASE}/api/candidates/request-offer`, {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${token}`
+                },
                 body: JSON.stringify({ email: user.email })
             });
             if (response.ok) {
@@ -244,9 +248,13 @@ export default function CandidateDashboard() {
                                             return;
                                         }
                                         try {
-                                            const res = await fetch('/api/candidates/request-offer', {
+                                            const token = localStorage.getItem('onboarding_token');
+                                            const res = await fetch(`${API_BASE}/api/candidates/request-offer`, {
                                                 method: 'POST',
-                                                headers: { 'Content-Type': 'application/json' },
+                                                headers: {
+                                                    'Content-Type': 'application/json',
+                                                    'Authorization': `Bearer ${token}`
+                                                },
                                                 body: JSON.stringify({ email: user.email })
                                             });
                                             if (res.ok) {

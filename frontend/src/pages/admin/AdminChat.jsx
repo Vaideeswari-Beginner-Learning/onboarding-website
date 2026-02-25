@@ -19,7 +19,10 @@ export default function AdminChat() {
     useEffect(() => {
         const fetchConversations = async () => {
             try {
-                const response = await fetch(`${API_BASE}/api/admin/conversations`);
+                const token = localStorage.getItem('onboarding_token');
+                const response = await fetch(`${API_BASE}/api/admin/conversations`, {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
                 if (response.ok) {
                     const data = await response.json();
                     console.log("AdminChat: Conversations list:", data);
@@ -58,7 +61,10 @@ export default function AdminChat() {
             try {
                 const normalizedEmail = selectedUser.email.trim().toLowerCase();
                 console.log("AdminChat: Fetching messages for", normalizedEmail);
-                const response = await fetch(`${API_BASE}/api/messages/${normalizedEmail}`);
+                const token = localStorage.getItem('onboarding_token');
+                const response = await fetch(`${API_BASE}/api/messages/${normalizedEmail}`, {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
                 if (response.ok) {
                     const data = await response.json();
                     setMessages(data);
@@ -97,9 +103,13 @@ export default function AdminChat() {
         setInput('');
 
         try {
+            const token = localStorage.getItem('onboarding_token');
             await fetch(`${API_BASE}/api/messages`, {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${token}`
+                },
                 body: JSON.stringify(newMessage)
             });
         } catch (error) {
