@@ -1,0 +1,12 @@
+{
+    "rewrites": [
+        {
+            "source": "/api/(.*)",
+            "destination": "https://onboarding-backend-4pdl.onrender.com/api/$1"
+        },
+        {
+            "source": "/(.*)",
+            "destination": "/frontend/dist/$1"
+        }
+    ]
+}
