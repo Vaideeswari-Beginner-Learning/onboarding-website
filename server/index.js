@@ -38,6 +38,15 @@ app.use((req, res, next) => {
 app.use(express.json({ limit: '10mb' }));
 app.use("/files", express.static(path.join(process.cwd(), "public")));
 
+// Root Route
+app.get('/', (req, res) => {
+    res.json({
+        message: "Forge India Connect Onboarding API is running",
+        documentation: "/api/health-check",
+        status: "Online"
+    });
+});
+
 // Health Check Endpoint
 app.get('/api/health-check', (req, res) => {
     res.json({
@@ -555,9 +564,9 @@ app.post('/api/admin/send-offer-email', async (req, res) => {
             });
         }
 
-        res.status(500).json({ 
+        res.status(500).json({
             success: false,
-            message: 'Error sending offer letter email', 
+            message: 'Error sending offer letter email',
             error: errorCode,
             detail: errorMessage,
             smtpResponse: errorResponse
