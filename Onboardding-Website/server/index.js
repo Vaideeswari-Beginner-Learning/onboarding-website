@@ -1,4 +1,5 @@
 import express from 'express';
+import nodemailer from 'nodemailer';
 import cors from 'cors';
 import mongoose from 'mongoose';
 import dotenv from 'dotenv';
@@ -510,11 +511,12 @@ app.post('/api/admin/send-offer-email', async (req, res) => {
         const info = await transporter.sendMail(mailOptions);
 
         // Show preview URL if using test account (Ethereal)
-        const previewUrl = nodemailer.getTestMessageUrl(info);
-        if (previewUrl) {
-            console.log(`📧 EMAIL PREVIEW URL: ${previewUrl}`);
-            console.log(`   ^ Open this URL in your browser to see the sent email with PDF attachment`);
-        }
+        try {
+            const previewUrl = nodemailer.getTestMessageUrl(info);
+            if (previewUrl) {
+                console.log(`📧 EMAIL PREVIEW URL: ${previewUrl}`);
+            }
+        } catch (e) { /* ignore preview url errors */ }
 
         // Update status to 'Sent'
         await Candidate.findByIdAndUpdate(candidateId, {
