@@ -1,5 +1,6 @@
 import { useNavigate } from 'react-router-dom';
 import { useState, useEffect, useRef } from 'react';
+import { useAuth } from '../../context/AuthContext';
 import Navbar from '../../components/Navbar';
 import { Users, Search, Filter, MoreVertical, Eye, FileText, CheckCircle, XCircle, Clock, MessageSquare, Send, X, Trash2 } from 'lucide-react';
 import JSZip from 'jszip';
@@ -7,6 +8,7 @@ import { saveAs } from 'file-saver';
 
 export default function AdminDashboard() {
     const navigate = useNavigate();
+    const { user } = useAuth();
     const [candidates, setCandidates] = useState([]);
     const [selectedChatCandidate, setSelectedChatCandidate] = useState(null);
     const [chatMessages, setChatMessages] = useState([]);
@@ -141,7 +143,7 @@ export default function AdminDashboard() {
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
                     sender: 'admin',
-                    senderName: 'Admin',
+                    senderName: user?.name || 'Admin',
                     receiver: selectedChatCandidate.email,
                     text: newMsg.text
                 })
@@ -292,6 +294,11 @@ export default function AdminDashboard() {
                                                 {candidate.offerLetterStatus === 'Generated' && (
                                                     <span className="px-2 py-1 text-xs font-semibold rounded-full bg-green-50 text-green-600 flex items-center md:w-fit border border-green-200">
                                                         <CheckCircle className="w-3 h-3 mr-1" /> Offer Sent
+                                                    </span>
+                                                )}
+                                                {candidate.offerLetterStatus === 'Sent' && (
+                                                    <span className="px-2 py-1 text-xs font-semibold rounded-full bg-blue-50 text-blue-600 flex items-center md:w-fit border border-blue-200">
+                                                        <CheckCircle className="w-3 h-3 mr-1" /> Emailed ✉️
                                                     </span>
                                                 )}
                                             </div>

@@ -142,8 +142,24 @@ export const AuthProvider = ({ children }) => {
         }
     };
 
+    const submitOnboarding = async (name, email) => {
+        try {
+            const response = await fetch(`${API_BASE}/api/onboard`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ name, email }),
+            });
+            return await response.json();
+        } catch (error) {
+            console.error('Submit Onboarding Error:', error);
+            return { success: false, message: error.message };
+        }
+    };
+
     return (
-        <AuthContext.Provider value={{ user, loginAdmin, loginCandidate, sendOtp, verifyOtp, register, updateCandidate, logout, loading }}>
+        <AuthContext.Provider value={{
+            user, loginAdmin, loginCandidate, sendOtp, verifyOtp, register, updateCandidate, logout, loading, submitOnboarding
+        }}>
             {children}
         </AuthContext.Provider>
     );

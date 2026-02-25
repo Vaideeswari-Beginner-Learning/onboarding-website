@@ -40,7 +40,7 @@ export default function Navbar() {
                                     <div className="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center">
                                         <User className="w-4 h-4 text-blue-600" />
                                     </div>
-                                    <span className="hidden sm:block font-medium">{user.name}</span>
+                                    <span className="hidden sm:block font-medium">{user.name || (user.role === 'admin' ? 'Admin' : 'User')}</span>
                                 </div>
                                 <button
                                     onClick={handleLogout}

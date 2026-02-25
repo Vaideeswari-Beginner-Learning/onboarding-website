@@ -87,7 +87,7 @@ export default function AdminChat() {
 
         const newMessage = {
             sender: 'admin',
-            senderName: 'HR Admin',
+            senderName: user?.name || 'HR Admin',
             receiver: selectedUser.email.trim().toLowerCase(),
             text: input
         };

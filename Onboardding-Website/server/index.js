@@ -2,8 +2,13 @@ import express from 'express';
 import cors from 'cors';
 import mongoose from 'mongoose';
 import dotenv from 'dotenv';
+import fs from 'fs';
+import path from 'path';
+import os from 'os';
 import Candidate from './models/Candidate.js';
 import Message from './models/Message.js';
+import { getTransporter, resetTransporter, sendAutomaticOfferEmail } from './utils/mailer.js';
+import { handleAutomatedOnboarding } from './controllers/onboardingController.js';
 
 dotenv.config();
 
@@ -30,20 +35,43 @@ app.use((req, res, next) => {
 // app.use(cors()); // Disable package for now to be absolutely sure
 
 app.use(express.json({ limit: '10mb' }));
+app.use("/files", express.static(path.join(process.cwd(), "public")));
 
 // Health Check Endpoint
 app.get('/api/health-check', (req, res) => {
     res.json({
         status: 'ok',
-        version: '1.3.0-FINAL-FIX',
-        message: 'CORS is set to allow *',
+        version: '1.4.0-FINAL',
+        message: 'CORS is open',
         timestamp: new Date().toISOString()
     });
 });
 
-// Root Endpoint
-app.get('/', (req, res) => {
-    res.send('Server is running v1.3.0. CORS should be open.');
+// System Info for Mobile Testing & Mailer Status
+app.get('/api/system-info', (req, res) => {
+    const interfaces = os.networkInterfaces();
+    let localIp = 'localhost';
+
+    for (const devName in interfaces) {
+        const iface = interfaces[devName];
+        for (let i = 0; i < iface.length; i++) {
+            const alias = iface[i];
+            if (alias.family === 'IPv4' && alias.address !== '127.0.0.1' && !alias.internal) {
+                localIp = alias.address;
+                break;
+            }
+        }
+    }
+
+    const mailerUser = process.env.EMAIL_USER;
+    const mailerPass = process.env.EMAIL_PASS;
+    const isMailerConfigured = mailerUser && mailerPass && !mailerUser.includes('your-') && !mailerPass.includes('paste-');
+
+    res.json({
+        suggestedUrl: `http://${localIp}:${PORT}`,
+        mailerConfigured: !!isMailerConfigured,
+        mailerUser: isMailerConfigured ? mailerUser : 'Not Configured'
+    });
 });
 
 // Connect to MongoDB
@@ -77,7 +105,7 @@ app.post('/api/auth/login', (req, res) => {
             res.json({
                 user: {
                     id: 'ADMIN-001',
-                    name: 'Super Admin',
+                    name: 'Admin',
                     email: 'info@forgeindiaconnect.com',
                     role: 'admin'
                 }
@@ -133,10 +161,18 @@ app.post('/api/auth/register', async (req, res) => {
     const { name, email, phone, password } = req.body;
 
     try {
-        // Check if user exists
-        const existingCandidate = await Candidate.findOne({ email });
-        if (existingCandidate) {
-            return res.status(400).json({ message: 'User already exists' });
+        // Find existing user
+        let candidate = await Candidate.findOne({ email });
+
+        if (candidate) {
+            console.log(`🔄 Re-registering existing user: ${email}. Resetting status for testing.`);
+            candidate.name = name;
+            candidate.phone = phone;
+            candidate.password = password;
+            candidate.status = 'Onboarding';
+            candidate.documents = []; // Clear for reset
+            await candidate.save();
+            return res.json({ user: candidate, message: 'Account reset for testing' });
         }
 
         const newCandidate = new Candidate({
@@ -144,7 +180,7 @@ app.post('/api/auth/register', async (req, res) => {
             name,
             email,
             phone,
-            password, // In real app, hash this
+            password,
             role: 'candidate',
             status: 'Onboarding',
             date: new Date().toISOString().split('T')[0],
@@ -158,6 +194,9 @@ app.post('/api/auth/register', async (req, res) => {
         res.status(500).json({ message: 'Server error during registration' });
     }
 });
+
+// --- Automatic Onboarding & Email Flow ---
+app.post('/api/onboard', handleAutomatedOnboarding);
 
 // Candidate Verify OTP & Login
 app.post('/api/auth/otp/verify', async (req, res) => {
@@ -260,7 +299,7 @@ app.post('/api/admin/generate-offer', async (req, res) => {
 // Get Candidates (for Admin)
 app.get('/api/candidates', async (req, res) => {
     try {
-        const candidates = await Candidate.find();
+        const candidates = await Candidate.find({ role: 'candidate' });
         res.json(candidates);
     } catch (error) {
         console.error('Fetch Candidates Error:', error);
@@ -355,6 +394,159 @@ app.get('/api/admin/check-retention', async (req, res) => {
     }
 });
 
+// --- Email: Send Offer Letter ---
+
+// Email transporter is handled by utils/mailer.js
+
+app.post('/api/admin/send-offer-email', async (req, res) => {
+    const { candidateId, pdfBase64, customEmail, appBaseUrl } = req.body;
+    try {
+        const candidate = await Candidate.findById(candidateId);
+        if (!candidate) {
+            return res.status(404).json({ message: 'Candidate not found' });
+        }
+
+        if (!pdfBase64) {
+            return res.status(400).json({ message: 'Offer Letter PDF data is missing' });
+        }
+
+        const transporter = getTransporter();
+        if (!transporter) {
+            return res.status(400).json({
+                success: false,
+                error: 'CREDENTIALS_MISSING',
+                message: 'Gmail App Password is not configured in .env'
+            });
+        }
+
+        if (res.headersSent) return; // Exit if we already sent the error response
+
+        const offerDetails = candidate.offerDetails || {};
+        const candidateEmail = customEmail || candidate.email;
+        const candidateName = offerDetails.employeeName || candidate.name;
+        const companyName = offerDetails.companyName || 'Forge India Connect';
+        const jobRole = offerDetails.jobRole || 'Employee';
+        const joiningDate = offerDetails.joiningDate || 'TBD';
+
+        // SMART URL DETECTION: Use environment variable or detect from request
+        let stableBaseUrl = process.env.BASE_URL || process.env.RENDER_EXTERNAL_URL;
+
+        if (!stableBaseUrl) {
+            const host = req.get('host');
+            const protocol = req.get('x-forwarded-proto') || req.protocol;
+            stableBaseUrl = `${protocol}://${host}`;
+        }
+
+        // Cleanup: Force replace 5173 with 5000 in the URL (helpful for local setup)
+        if (stableBaseUrl.includes(':5173')) {
+            stableBaseUrl = stableBaseUrl.replace(':5173', ':5000');
+        } else if (stableBaseUrl.includes('localhost') && !stableBaseUrl.includes(':5000')) {
+            stableBaseUrl = `${stableBaseUrl}:5000`;
+        }
+
+        const downloadUrl = `${stableBaseUrl}/api/public/offer-pdf/${candidateId}`;
+
+        // CRITICAL: Save the PDF to the database so the link above works
+        await Candidate.findByIdAndUpdate(candidateId, {
+            offerPdfBase64: pdfBase64,
+            offerLetterStatus: 'Sent'
+        });
+
+        const mailOptions = {
+            from: `Forge India Connect HR <${process.env.EMAIL_USER}>`,
+            replyTo: process.env.EMAIL_USER,
+            to: candidateEmail,
+            subject: `Official Offer Letter - ${companyName}`,
+            html: `
+                    <div style="font-family: 'Segoe UI', Arial, sans-serif; max-width: 600px; margin: 0 auto; background: #f8fafc; padding: 32px;">
+                        <div style="background: linear-gradient(135deg, #1e293b 0%, #334155 100%); color: white; padding: 32px; border-radius: 16px 16px 0 0; text-align: center;">
+                            <h1 style="margin: 0; font-size: 24px;">🎉 Congratulations, ${candidateName}!</h1>
+                            <p style="margin: 8px 0 0; opacity: 0.9; font-size: 14px;">You have received an offer from ${companyName}</p>
+                        </div>
+                        <div style="background: white; padding: 32px; border-radius: 0 0 16px 16px; border: 1px solid #e2e8f0; border-top: none;">
+                            <p style="font-size: 16px; color: #334155; line-height: 1.6;">
+                                Dear <strong>${candidateName}</strong>,
+                            </p>
+                            <p style="font-size: 15px; color: #475569; line-height: 1.6;">
+                                We are delighted to offer you the position of <strong>${jobRole}</strong> at <strong>${companyName}</strong>. 
+                                We are excited to have you join our team!
+                            </p>
+                            
+                            <div style="text-align: center; margin: 30px 0;">
+                                <a href="${downloadUrl}" style="display: inline-block; padding: 14px 28px; background-color: #2563eb; color: white; text-decoration: none; border-radius: 12px; font-weight: bold; font-size: 16px; box-shadow: 0 4px 6px -1px rgba(37, 99, 235, 0.2);">
+                                    Download Offer Letter
+                                </a>
+                                <p style="font-size: 11px; color: #94a3b8; margin-top: 10px;">(Works on desktop and mobile)</p>
+                            </div>
+
+                            <div style="background: #f1f5f9; border-radius: 12px; padding: 20px; margin: 24px 0;">
+                                <table style="width: 100%; font-size: 14px; color: #475569;">
+                                    <tr><td style="padding: 6px 0; font-weight: 600;">Position:</td><td>${jobRole}</td></tr>
+                                    <tr><td style="padding: 6px 0; font-weight: 600;">Joining Date:</td><td>${joiningDate}</td></tr>
+                                    <tr><td style="padding: 6px 0; font-weight: 600;">Company:</td><td>${companyName}</td></tr>
+                                </table>
+                            </div>
+                            <p style="font-size: 14px; color: #64748b; line-height: 1.6;">
+                                You can also view the attached PDF for full details. If you have any questions, feel free to reply to this email.
+                            </p>
+                            <hr style="border: none; border-top: 1px solid #e2e8f0; margin: 24px 0;" />
+                            <p style="font-size: 12px; color: #94a3b8; text-align: center;">
+                                This is an automated email from ${companyName} HR Department.<br/>
+                                Please do not share this email with unauthorized persons.
+                            </p>
+                        </div>
+                    </div>
+                `,
+            attachments: [
+                {
+                    filename: `Offer_Letter_${candidateName.replace(/\s+/g, '_')}.pdf`,
+                    content: pdfBase64,
+                    encoding: 'base64',
+                    contentType: 'application/pdf'
+                }
+            ]
+        };
+
+        const info = await transporter.sendMail(mailOptions);
+
+        // Show preview URL if using test account (Ethereal)
+        const previewUrl = nodemailer.getTestMessageUrl(info);
+        if (previewUrl) {
+            console.log(`📧 EMAIL PREVIEW URL: ${previewUrl}`);
+            console.log(`   ^ Open this URL in your browser to see the sent email with PDF attachment`);
+        }
+
+        // Update status to 'Sent'
+        await Candidate.findByIdAndUpdate(candidateId, {
+            $set: { offerLetterStatus: 'Sent' }
+        });
+
+        console.log(`✅ Offer letter email sent to ${candidateEmail}`);
+        res.json({
+            success: true,
+            message: `Offer letter sent to ${candidateEmail}`,
+            previewUrl: previewUrl || null
+        });
+
+    } catch (error) {
+        console.error('Send Offer Email Error:', error);
+
+        // Handle common email auth errors specifically
+        if (error.code === 'EAUTH' || (error.message && error.message.includes('auth')) || (error.response && error.response.includes('auth'))) {
+            resetTransporter(); // CRITICAL: Reset cached transporter so it reloads .env
+            return res.status(401).json({
+                success: false,
+                error: 'AUTH_FAILED',
+                message: 'Gmail authentication failed. Please confirm your 16-digit App Password (no spaces) in the .env file and ensure it is valid.'
+            });
+        }
+
+        const detail = error.response || error.message;
+        res.status(500).json({ message: 'Error sending offer letter email', detail });
+    }
+});
+
+
 // --- Chat Routes ---
 
 // Send Message
@@ -393,6 +585,109 @@ app.get('/api/messages/:userEmail', async (req, res) => {
 });
 
 // Admin: Get List of Active Conversations
+// --- PDF Sharing: Store and Serve PDF links ---
+app.post('/api/admin/save-offer-pdf', async (req, res) => {
+    const { candidateId, pdfBase64 } = req.body;
+    try {
+        const candidate = await Candidate.findByIdAndUpdate(candidateId, {
+            offerPdfBase64: pdfBase64,
+            offerLetterStatus: 'Sent'
+        }, { new: true });
+
+        if (!candidate) return res.status(404).json({ message: 'Candidate not found' });
+
+        res.json({ message: 'PDF saved successfully', id: candidate._id });
+    } catch (error) {
+        console.error('Save PDF Error:', error);
+        res.status(500).json({ message: 'Error saving PDF' });
+    }
+});
+
+app.get('/api/public/offer-pdf/:id', async (req, res) => {
+    try {
+        const candidate = await Candidate.findById(req.params.id);
+        if (!candidate || !candidate.offerPdfBase64) {
+            console.log(`❌ PDF Not Found for ID: ${req.params.id}`);
+            return res.status(404).send('Offer letter not found. Please regenerate it.');
+        }
+
+        const pdfBuffer = Buffer.from(candidate.offerPdfBase64, 'base64');
+        const filename = (candidate.name || 'Offer_Letter').replace(/\s+/g, '_');
+
+        res.setHeader('Content-Type', 'application/pdf');
+        res.setHeader('Content-Disposition', `inline; filename="${filename}.pdf"`);
+        return res.send(pdfBuffer);
+    } catch (error) {
+        console.error('Fetch PDF Error:', error);
+        return res.status(500).send('Error retrieving PDF from server');
+    }
+});
+
+// --- Email Setup Verification & Update ---
+
+// Test Connection Endpoint
+app.post('/api/admin/test-email-connection', async (req, res) => {
+    const { email, password } = req.body;
+    try {
+        if (!email || !password) {
+            return res.status(400).json({ success: false, message: 'Email and Password are required' });
+        }
+
+        const testTransporter = nodemailer.createTransport({
+            service: 'gmail',
+            auth: { user: email, pass: password }
+        });
+
+        await testTransporter.verify();
+        res.json({ success: true, message: 'Connection Successful! Your Gmail is ready to send PDFs.' });
+    } catch (error) {
+        console.error('Test Connection Error:', error);
+        res.status(400).json({
+            success: false,
+            message: 'Connection Failed: ' + (error.response || error.message),
+            error: error.code
+        });
+    }
+});
+
+app.post('/api/admin/update-email-setup', async (req, res) => {
+    const { email, password } = req.body;
+    try {
+        if (!email || !password) {
+            return res.status(400).json({ message: 'Email and Password are required' });
+        }
+
+        // Read existing .env
+        let envContent = fs.readFileSync('.env', 'utf8');
+
+        // Update lines
+        const lines = envContent.split('\n');
+        const updatedLines = lines.map(line => {
+            if (line.startsWith('EMAIL_USER=')) return `EMAIL_USER=${email}`;
+            if (line.startsWith('EMAIL_PASS=')) return `EMAIL_PASS=${password}`;
+            return line;
+        });
+
+        // If lines were missing, add them
+        if (!updatedLines.some(l => l.startsWith('EMAIL_USER='))) updatedLines.push(`EMAIL_USER=${email}`);
+        if (!updatedLines.some(l => l.startsWith('EMAIL_PASS='))) updatedLines.push(`EMAIL_PASS=${password}`);
+
+        fs.writeFileSync('.env', updatedLines.join('\n'));
+
+        // Refresh process.env immediately
+        process.env.EMAIL_USER = email;
+        process.env.EMAIL_PASS = password;
+
+        // FORCE MAIL UTILITY RESET
+        resetTransporter();
+        console.log(`✅ .env updated. Mailer utility reset. New Auth: ${email}`);
+        res.json({ success: true, message: 'Settings saved and mailer reset!' });
+    } catch (error) {
+        console.error('Update Setup Error:', error);
+        res.status(500).json({ message: 'Failed to update settings' });
+    }
+});
+
 app.get('/api/admin/conversations', async (req, res) => {
     try {
         const senders = await Message.distinct('sender', { sender: { $ne: 'admin' } });

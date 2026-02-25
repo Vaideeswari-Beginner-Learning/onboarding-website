@@ -15,10 +15,11 @@ import OnboardingComplete from './pages/candidate/OnboardingComplete';
 import ChatSupport from './components/ChatSupport';
 import AdminChat from './pages/admin/AdminChat';
 
-const ProtectedRoute = ({ children }) => {
+const ProtectedRoute = ({ children, adminOnly = false }) => {
   const { user, loading } = useAuth();
   if (loading) return <div>Loading...</div>;
   if (!user) return <Navigate to="/login" />;
+  if (adminOnly && user.role !== 'admin') return <Navigate to="/dashboard" />;
   return children;
 };
 
@@ -54,27 +55,27 @@ function App() {
               </ProtectedRoute>
             } />
             <Route path="/admin/dashboard" element={
-              <ProtectedRoute>
+              <ProtectedRoute adminOnly>
                 <AdminDashboard />
               </ProtectedRoute>
             } />
             <Route path="/admin/candidate/:id" element={
-              <ProtectedRoute>
+              <ProtectedRoute adminOnly>
                 <CandidateDetail />
               </ProtectedRoute>
             } />
             <Route path="/admin/add-candidate" element={
-              <ProtectedRoute>
+              <ProtectedRoute adminOnly>
                 <AddCandidate />
               </ProtectedRoute>
             } />
             <Route path="/admin/offer-letter/:id" element={
-              <ProtectedRoute>
+              <ProtectedRoute adminOnly>
                 <OfferLetter />
               </ProtectedRoute>
             } />
             <Route path="/admin/chat" element={
-              <ProtectedRoute>
+              <ProtectedRoute adminOnly>
                 <AdminChat />
               </ProtectedRoute>
             } />

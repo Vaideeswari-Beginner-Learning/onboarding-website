@@ -1,20 +1,30 @@
 import { useState, useEffect, useRef } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
+import { useAuth } from '../../context/AuthContext';
 import Navbar from '../../components/Navbar';
-import { ArrowLeft, Download, CheckCircle, XCircle, FileText, User, Eye, PartyPopper } from 'lucide-react';
-import { generateOfferLetter } from '../../utils/offerLetterGenerator';
+import { ArrowLeft, Download, CheckCircle, XCircle, FileText, User, Eye, PartyPopper, Mail, Loader2, AlertCircle } from 'lucide-react';
+import { generateOfferLetter, generateOfferLetterBase64 } from '../../utils/offerLetterGenerator';
 
 export default function CandidateDetail() {
     const navigate = useNavigate();
+    const { user } = useAuth();
     const { id } = useParams();
     const [candidate, setCandidate] = useState(null);
     const [loading, setLoading] = useState(true);
     const [showDonePopup, setShowDonePopup] = useState(false);
+    const [sendingEmail, setSendingEmail] = useState(false);
+    const [showEmailConfirmModal, setShowEmailConfirmModal] = useState(false);
+    const [targetEmail, setTargetEmail] = useState('');
+    const [setupEmail, setSetupEmail] = useState('vaideeswari8@gmail.com');
+    const [savingSetup, setSavingSetup] = useState(false);
+    const [appBaseUrl, setAppBaseUrl] = useState(localStorage.getItem('appBaseUrl') || window.location.origin);
 
     // --- Chat Hooks (Moved to Top) ---
     const [showChat, setShowChat] = useState(false);
     const [messages, setMessages] = useState([]);
     const [chatInput, setChatInput] = useState('');
+    const [suggestedUrl, setSuggestedUrl] = useState('');
+    const [mailerStatus, setMailerStatus] = useState({ configured: false, user: '' });
     const chatEndRef = useRef(null);
 
     const API_BASE = import.meta.env.VITE_API_URL || '';
@@ -38,6 +48,28 @@ export default function CandidateDetail() {
         };
 
         if (id) fetchCandidate();
+
+        // Fetch suggested IP for mobile testing
+        const fetchSystemInfo = async () => {
+            try {
+                const response = await fetch(`${API_BASE}/api/system-info`);
+                if (response.ok) {
+                    const data = await response.json();
+                    if (data.suggestedUrl) {
+                        setSuggestedUrl(data.suggestedUrl);
+                        // Auto-fill if it's currently localhost
+                        if (appBaseUrl.includes('localhost')) {
+                            setAppBaseUrl(data.suggestedUrl);
+                            localStorage.setItem('appBaseUrl', data.suggestedUrl);
+                        }
+                    }
+                    if (data.mailerConfigured !== undefined) {
+                        setMailerStatus({ configured: data.mailerConfigured, user: data.mailerUser });
+                    }
+                }
+            } catch (err) { console.log("System info fetch failed"); }
+        };
+        fetchSystemInfo();
     }, [id]);
 
     // Chat Logic - Fetch Messages
@@ -74,7 +106,7 @@ export default function CandidateDetail() {
 
         const newMessage = {
             sender: 'admin',
-            senderName: 'HR Admin',
+            senderName: user?.name || 'HR Admin',
             receiver: candidate.email.trim().toLowerCase(),
             text: chatInput
         };
@@ -105,7 +137,8 @@ export default function CandidateDetail() {
         location: 'Bangalore',
         joiningDate: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
         responsibilities: '',
-        companyAddress: '123 Tech Park, Innovation Street, Bangalore, Karnataka - 560001'
+        companyAddress: '123 Tech Park, Innovation Street, Bangalore, Karnataka - 560001',
+        recipientEmail: ''
     });
 
     // Populate details when candidate loads
@@ -114,8 +147,10 @@ export default function CandidateDetail() {
             setOfferForm(prev => ({
                 ...prev,
                 employeeName: candidate.name,
+                recipientEmail: candidate.email,
                 jobRole: candidate.personalDetails?.jobRole || prev.jobRole
             }));
+            setTargetEmail(candidate.email);
         }
     }, [candidate]);
 
@@ -124,8 +159,26 @@ export default function CandidateDetail() {
         setOfferForm(prev => ({ ...prev, [name]: value }));
     };
 
-    const handleGenerateOffer = async (e) => {
-        e.preventDefault();
+    // --- Helper for stable mobile links ---
+    const getStableBaseUrl = (rawUrl) => {
+        if (!rawUrl) return window.location.origin.replace(':5173', ':5000');
+        // Force port 5000 for backend routes
+        let url = rawUrl.trim();
+        if (url.includes(':5173')) {
+            url = url.replace(':5173', ':5000');
+        } else if (!url.includes(':5000') && !url.includes('localhost')) {
+            // Attempt to add :5000 if it looks like an IP
+            const ipv4Regex = /\b(?:\d{1,3}\.){3}\d{1,3}\b/;
+            if (ipv4Regex.test(url) && !url.includes(':')) {
+                url = `${url}:5000`;
+            }
+        }
+        return url;
+    };
+
+    const handlePrepareOffer = async (e) => {
+        if (e) e.preventDefault();
+        // 1. Save offer details to database locally first
         try {
             const response = await fetch(`${API_BASE}/api/admin/generate-offer`, {
                 method: 'POST',
@@ -137,17 +190,101 @@ export default function CandidateDetail() {
             });
 
             if (response.ok) {
-                alert("Offer Letter Generated Successfully!");
+                // Details saved, now open the second step (Email Confirmation)
                 setShowOfferModal(false);
-                window.location.reload();
+                setShowEmailConfirmModal(true);
             } else {
-                alert("Failed to generate offer letter.");
+                alert("❌ Failed to save offer details on server.");
             }
         } catch (error) {
-            console.error("Error generating offer:", error);
-            alert("Error generating offer letter.");
+            console.error("Error saving offer details:", error);
+            alert("❌ System Error: Unable to save details.");
         }
     };
+
+    const [emailAuthFailed, setEmailAuthFailed] = useState(false);
+
+    const handleFinalSendEmail = async (e) => {
+        if (e) e.preventDefault();
+        setSendingEmail(true);
+        setEmailAuthFailed(false);
+        try {
+            // 2. Automatically trigger the email sending process
+            const pdfBase64 = await generateOfferLetterBase64({ ...candidate, offerDetails: offerForm });
+
+            const emailResponse = await fetch(`${API_BASE}/api/admin/send-offer-email`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    candidateId: candidate._id,
+                    pdfBase64,
+                    customEmail: offerForm.recipientEmail,
+                    appBaseUrl: getStableBaseUrl(appBaseUrl) // Send sanitized URL to server
+                })
+            });
+
+            const emailData = await emailResponse.json();
+
+            if (emailResponse.ok) {
+                alert(`✅ Done! Offer Letter has been sent from HR to ${offerForm.recipientEmail} successfully.`);
+                setShowEmailConfirmModal(false);
+                setCandidate(prev => ({ ...prev, offerLetterStatus: 'Sent' }));
+            } else if (emailData.error === 'AUTH_FAILED') {
+                // If auth fails, don't alert. Just show the fallback button in the modal.
+                setEmailAuthFailed(true);
+            } else {
+                alert("✅ Offer details saved, but email failed. Error: " + (emailData.message || 'Check connection'));
+            }
+        } catch (error) {
+            console.error("Error in final send flow:", error);
+            alert("❌ System Error: Unable to send email.");
+        } finally {
+            setSendingEmail(false);
+        }
+    };
+
+    const handleManualSendFallback = async () => {
+        setSendingEmail(true);
+        try {
+            const pdfBase64 = await generateOfferLetterBase64({ ...candidate, offerDetails: offerForm });
+
+            // Save PDF to database first so the link in Gmail works!
+            await fetch(`${API_BASE}/api/admin/save-offer-pdf`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    candidateId: candidate._id,
+                    pdfBase64
+                })
+            });
+
+            const subject = encodeURIComponent(`Offer Letter - Forge India Connect`);
+
+            // SMART PORT FIX: If user entered port 5173, we MUST change it to 5000 for the PDF route
+            let stableBaseUrl = appBaseUrl.replace(':5173', ':5000');
+            // If it's just localhost, it won't work on mobile anyway, but let's at least fix the port
+            if (stableBaseUrl.includes('localhost') && !stableBaseUrl.includes(':5000')) {
+                stableBaseUrl = stableBaseUrl.replace(':5173', ':5000');
+            }
+
+            const downloadUrl = `${stableBaseUrl}/api/public/offer-pdf/${candidate._id}`;
+            const body = encodeURIComponent(`Dear ${offerForm.employeeName},\n\nWe are delighted to offer you the position of ${offerForm.jobRole}. \n\nYou can download your offer letter here: ${downloadUrl} \n\nPlease find the details in the attached documents.\n\nBest Regards,\nHR Team`);
+
+            // Use Gmail Web Compose URL instead of generic mailto
+            const gmailUrl = `https://mail.google.com/mail/?view=cm&fs=1&to=${offerForm.recipientEmail}&su=${subject}&body=${body}`;
+            window.open(gmailUrl, '_blank');
+
+            setShowEmailConfirmModal(false);
+            setCandidate(prev => ({ ...prev, offerLetterStatus: 'Sent (Manual)' }));
+        } catch (error) {
+            console.error("Error in manual send fallback:", error);
+            alert("❌ Failed to prepare manual email. Please try again.");
+        } finally {
+            setSendingEmail(false);
+        }
+    };
+
+
 
     // --- Conditional Rendering Checks ---
 
@@ -182,76 +319,103 @@ export default function CandidateDetail() {
 
                 {/* Offer Letter Notification */}
                 {candidate.offerLetterRequested && candidate.offerLetterStatus !== 'Generated' && (
-                    <div className="bg-yellow-50 border-l-4 border-yellow-400 p-4 mb-6 rounded-r-lg flex justify-between items-center animate-in slide-in-from-top-2">
-                        <div className="flex items-center">
-                            <div className="flex-shrink-0">
-                                <FileText className="h-5 w-5 text-yellow-400" />
+                    <div className="bg-amber-50 border-l-4 border-amber-400 p-6 mb-8 rounded-2xl flex justify-between items-center shadow-md animate-in slide-in-from-top-4 duration-500">
+                        <div className="flex items-center gap-4">
+                            <div className="w-12 h-12 bg-amber-100 rounded-2xl flex items-center justify-center text-amber-600 shadow-inner">
+                                <FileText className="h-6 w-6" />
                             </div>
-                            <div className="ml-3">
-                                <p className="text-sm text-yellow-700">
-                                    <span className="font-bold">Action Required:</span> Candidate has requested their Offer Letter.
-                                    <span className="ml-2 text-xs bg-white px-2 py-0.5 rounded border border-yellow-200">Role: {personal.jobRole}</span>
+                            <div>
+                                <h3 className="text-amber-900 font-bold text-lg leading-tight">Offer Letter Requested</h3>
+                                <p className="text-amber-700 text-sm mt-0.5">
+                                    Candidate is waiting for approval. <span className="ml-1 font-bold bg-amber-200/50 px-2 py-0.5 rounded text-amber-900 text-xs uppercase">Role: {personal.jobRole || 'N/A'}</span>
                                 </p>
                             </div>
                         </div>
                         <button
                             onClick={() => setShowOfferModal(true)}
-                            className="text-sm bg-yellow-400 hover:bg-yellow-500 text-yellow-900 font-bold py-1 px-4 rounded shadow-sm transition-colors"
+                            className="bg-amber-500 hover:bg-amber-600 text-white font-extrabold py-2.5 px-6 rounded-xl shadow-lg shadow-amber-200 transition-all hover:scale-105 active:scale-95 text-sm"
                         >
                             Generate & Approve
                         </button>
                     </div>
                 )}
 
-                {candidate.offerLetterStatus === 'Generated' && (
-                    <div className="bg-green-50 border-l-4 border-green-400 p-4 mb-6 rounded-r-lg flex justify-between items-center">
+                {(candidate.offerLetterStatus === 'Generated' || candidate.offerLetterStatus === 'Sent') && (
+                    <div className={`${candidate.offerLetterStatus === 'Sent' ? 'bg-blue-50 border-blue-400' : 'bg-emerald-50 border-emerald-400'} border-l-4 p-4 mb-6 rounded-xl flex justify-between items-center shadow-sm`}>
                         <div className="flex items-center">
-                            <FileText className="h-5 w-5 text-green-500 mr-2" />
-                            <span className="text-green-700 font-medium">Offer Letter Generated</span>
+                            {candidate.offerLetterStatus === 'Sent' ? (
+                                <div className="flex items-center gap-3">
+                                    <div className="w-8 h-8 rounded-full bg-blue-100 flex items-center justify-center">
+                                        <Mail className="h-4 w-4 text-blue-600" />
+                                    </div>
+                                    <span className="text-blue-800 font-semibold text-sm">Offer Letter Sent to {candidate.email}</span>
+                                </div>
+                            ) : (
+                                <div className="flex items-center gap-3">
+                                    <div className="w-8 h-8 rounded-full bg-emerald-100 flex items-center justify-center">
+                                        <FileText className="h-4 w-4 text-emerald-600" />
+                                    </div>
+                                    <span className="text-emerald-800 font-semibold text-sm">Offer Letter Generated</span>
+                                </div>
+                            )}
                         </div>
-                        <button
-                            onClick={() => generateOfferLetter(candidate)}
-                            className="text-sm bg-white border border-green-200 text-green-700 hover:bg-green-50 font-bold py-1 px-4 rounded shadow-sm transition-colors flex items-center"
-                        >
-                            <Download className="w-4 h-4 mr-1" /> Download Copy
-                        </button>
+                        <div className="flex items-center gap-3">
+                            <button
+                                onClick={() => generateOfferLetter(candidate)}
+                                className="inline-flex items-center px-4 py-2 bg-white border border-emerald-200 text-emerald-700 hover:bg-emerald-50 font-bold text-xs rounded-lg shadow-sm transition-all hover:scale-105 active:scale-95"
+                            >
+                                <Download className="w-3.5 h-3.5 mr-2" /> Download Copy
+                            </button>
+                        </div>
                     </div>
                 )}
 
                 {/* Header */}
-                <div className="bg-white rounded-2xl shadow-sm border border-slate-100 p-6 mb-6">
-                    <div className="md:flex justify-between items-start">
-                        <div className="flex gap-4">
-                            <div className="h-20 w-20 rounded-xl bg-blue-100 flex items-center justify-center text-blue-600 text-2xl font-bold uppercase">
+                <div className="bg-white rounded-3xl shadow-sm border border-slate-100 p-8 mb-8 relative overflow-hidden">
+                    <div className="absolute top-0 right-0 w-64 h-64 bg-blue-500/5 rounded-full -mr-32 -mt-32 blur-3xl"></div>
+                    <div className="relative z-10 md:flex justify-between items-center">
+                        <div className="flex gap-6 items-center">
+                            <div className="h-20 w-20 rounded-2xl bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center text-white text-3xl font-bold shadow-lg shadow-blue-200">
                                 {candidate.name?.charAt(0) || 'U'}
                             </div>
                             <div>
-                                <h1 className="text-2xl font-bold text-slate-900">{candidate.name}</h1>
-                                <p className="text-slate-500">{candidate.role || 'Role N/A'} • ID: {candidate._id?.slice(-6).toUpperCase()}</p>
-                                <div className="mt-2 flex gap-2">
-                                    <span className={`px-2.5 py-0.5 rounded-full text-xs font-medium ${candidate.status === 'Verified' ? 'bg-green-100 text-green-800' :
-                                        candidate.status === 'Rejected' ? 'bg-red-100 text-red-800' :
-                                            'bg-blue-100 text-blue-800'
-                                        }`}>
-                                        {candidate.status}
+                                <h1 className="text-3xl font-extrabold text-slate-900 tracking-tight">{candidate.name}</h1>
+                                <p className="text-slate-500 font-medium mt-1">{candidate.role || 'Candidate'} • ID: {candidate._id?.slice(-6).toUpperCase()}</p>
+                                <div className="mt-3 flex gap-2">
+                                    <span className={`px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider ${candidate.status === 'Verified' ? 'bg-green-100 text-green-700' :
+                                        candidate.status === 'Rejected' ? 'bg-red-100 text-red-700' :
+                                            'bg-blue-100 text-blue-700'
+                                        } `}>
+                                        ● {candidate.status}
                                     </span>
-                                    <span className="px-2.5 py-0.5 rounded-full text-xs font-medium bg-slate-100 text-slate-600">
+                                    <span className="px-3 py-1 rounded-full text-xs font-bold bg-slate-100 text-slate-600 uppercase tracking-wider">
                                         Joined {new Date(candidate.createdAt).toLocaleDateString()}
                                     </span>
                                 </div>
                             </div>
                         </div>
-                        <div className="flex gap-3 mt-4 md:mt-0">
-                            {/* Actions mock for now */}
-                            <button className="inline-flex items-center px-4 py-2 border border-transparent rounded-lg shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700" onClick={() => setShowChat(true)}>
+                        <div className="flex flex-wrap gap-3 mt-6 md:mt-0 items-center">
+                            {!mailerStatus.configured && (
+                                <div className="mr-2 flex items-center gap-1.5 px-3 py-1.5 bg-rose-50 text-rose-600 rounded-lg border border-rose-100 animate-pulse">
+                                    <AlertCircle className="w-4 h-4" />
+                                    <span className="text-[10px] font-bold uppercase">Mailer Not Ready</span>
+                                </div>
+                            )}
+                            <button
+                                className="inline-flex items-center px-5 py-2.5 rounded-xl shadow-lg shadow-indigo-200 text-sm font-bold text-white bg-indigo-600 hover:bg-indigo-700 transition-all hover:-translate-y-0.5"
+                                onClick={() => setShowOfferModal(true)}
+                            >
+                                <Mail className="w-4 h-4 mr-2" /> Send Offer
+                            </button>
+                            <button className="inline-flex items-center px-5 py-2.5 rounded-xl shadow-lg shadow-blue-200 text-sm font-bold text-white bg-blue-600 hover:bg-blue-700 transition-all hover:-translate-y-0.5" onClick={() => setShowChat(true)}>
                                 <User className="w-4 h-4 mr-2" /> Chat
                             </button>
-                            <button className="inline-flex items-center px-4 py-2 border border-transparent rounded-lg shadow-sm text-sm font-medium text-white bg-red-600 hover:bg-red-700">
-                                <XCircle className="w-4 h-4 mr-2" /> Reject
+                            <button className="inline-flex items-center px-5 py-2.5 rounded-xl border border-slate-200 text-sm font-bold text-slate-600 bg-white hover:bg-slate-50 transition-all">
+                                <XCircle className="w-4 h-4 mr-2 text-red-500" /> Reject
                             </button>
                             <button
                                 onClick={() => setShowDonePopup(true)}
-                                className="inline-flex items-center px-4 py-2 border border-transparent rounded-lg shadow-sm text-sm font-medium text-white bg-green-600 hover:bg-green-700">
+                                className="inline-flex items-center px-5 py-2.5 rounded-xl shadow-lg shadow-emerald-200 text-sm font-bold text-white bg-emerald-600 hover:bg-emerald-700 transition-all hover:-translate-y-0.5">
                                 <CheckCircle className="w-4 h-4 mr-2" /> Approve
                             </button>
                         </div>
@@ -331,28 +495,31 @@ export default function CandidateDetail() {
 
                             <div className="space-y-4">
                                 {docs.length === 0 ? (
-                                    <p className="text-slate-500 text-center py-4">No documents submitted yet.</p>
+                                    <div className="text-center py-12 bg-slate-50 rounded-2xl border-2 border-dashed border-slate-200">
+                                        <FileText className="w-12 h-12 text-slate-300 mx-auto mb-3" />
+                                        <p className="text-slate-500 font-medium">No documents submitted yet.</p>
+                                    </div>
                                 ) : (
                                     docs.map((doc, idx) => (
-                                        <div key={idx} className="flex items-center justify-between p-4 bg-slate-50 rounded-lg border border-slate-200">
+                                        <div key={idx} className="flex items-center justify-between p-5 bg-white rounded-2xl border border-slate-200 hover:border-blue-400 hover:shadow-md transition-all group">
                                             <div className="flex items-center">
-                                                <div className="bg-white p-2 rounded-lg border border-slate-200">
-                                                    <FileText className="w-6 h-6 text-blue-600" />
+                                                <div className="bg-blue-50 p-3 rounded-xl border border-blue-100 group-hover:bg-blue-600 group-hover:text-white transition-colors">
+                                                    <FileText className="w-6 h-6" />
                                                 </div>
                                                 <div className="ml-4">
-                                                    <p className="text-sm font-medium text-slate-900">{doc.name}</p>
-                                                    <p className="text-xs text-slate-500">{doc.type} • {doc.size}</p>
+                                                    <p className="text-sm font-bold text-slate-900">{doc.name}</p>
+                                                    <p className="text-xs text-slate-500 font-medium uppercase tracking-tight">{doc.type} • {doc.size}</p>
                                                 </div>
                                             </div>
                                             <div className="flex items-center gap-2">
-                                                <button className="p-2 text-slate-400 hover:text-blue-600 transition-colors" title="View">
-                                                    <Eye className="w-4 h-4" />
+                                                <button className="p-2.5 text-slate-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-all" title="View">
+                                                    <Eye className="w-5 h-5" />
                                                 </button>
-                                                <div className="h-6 w-px bg-slate-300 mx-2"></div>
-                                                <button className="p-2 text-green-600 hover:bg-green-50 rounded-full transition-colors" title="Approve">
+                                                <div className="h-6 w-px bg-slate-200 mx-1"></div>
+                                                <button className="p-2.5 text-slate-400 hover:text-emerald-600 hover:bg-emerald-50 rounded-lg transition-all" title="Approve">
                                                     <CheckCircle className="w-5 h-5" />
                                                 </button>
-                                                <button className="p-2 text-red-600 hover:bg-red-50 rounded-full transition-colors" title="Reject">
+                                                <button className="p-2.5 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition-all" title="Reject">
                                                     <XCircle className="w-5 h-5" />
                                                 </button>
                                             </div>
@@ -388,7 +555,7 @@ export default function CandidateDetail() {
                         </div>
 
                         <div className="p-6 overflow-y-auto">
-                            <form id="offerForm" onSubmit={handleGenerateOffer} className="space-y-4">
+                            <form id="offerForm" onSubmit={handlePrepareOffer} className="space-y-4">
                                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                                     <div>
                                         <label className="block text-sm font-medium text-slate-700 mb-1">Employee Name (To)</label>
@@ -426,13 +593,89 @@ export default function CandidateDetail() {
                                         <label className="block text-sm font-medium text-slate-700 mb-1">Roles & Responsibilities</label>
                                         <textarea name="responsibilities" value={offerForm.responsibilities} onChange={handleOfferChange} rows={3} placeholder="Brief summary of duties..." className="w-full rounded-lg border-slate-300 text-sm" />
                                     </div>
+                                    <div className="sm:col-span-2">
+                                        <label className="block text-sm font-medium text-slate-700 mb-1">Employee Email Address</label>
+                                        <input type="email" name="recipientEmail" value={offerForm.recipientEmail} onChange={handleOfferChange} required className="w-full rounded-lg border-slate-300 text-sm focus:ring-blue-500 focus:border-blue-500" placeholder="employee@example.com" />
+                                    </div>
                                 </div>
                             </form>
                         </div>
 
                         <div className="p-4 border-t border-slate-100 flex justify-end gap-3 bg-slate-50/50 rounded-b-2xl">
                             <button type="button" onClick={() => setShowOfferModal(false)} className="px-4 py-2 border border-slate-300 rounded-lg text-slate-700 hover:bg-slate-50 font-medium text-sm">Cancel</button>
-                            <button type="submit" form="offerForm" className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 font-medium text-sm shadow-sm">Generate & Send</button>
+                            <button type="submit" form="offerForm" className="px-8 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 font-bold text-sm shadow-lg shadow-blue-500/20 transition-all flex items-center">
+                                Next Step <ArrowLeft className="w-4 h-4 ml-2 rotate-180" />
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* Step 2: Confirmation Email Modal */}
+            {showEmailConfirmModal && (
+                <div className="fixed inset-0 z-[60] flex items-center justify-center p-4">
+                    <div className="absolute inset-0 bg-slate-900/60 backdrop-blur-md" onClick={() => setShowEmailConfirmModal(false)}></div>
+                    <div className="bg-white rounded-2xl shadow-2xl w-full max-w-sm relative z-10 animate-in zoom-in-95 duration-200">
+                        <div className="p-6 text-center">
+                            <div className="w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-4 text-blue-600">
+                                <Mail className="w-8 h-8" />
+                            </div>
+                            <h2 className="text-xl font-bold text-slate-900 mb-2">Confirm Email Address</h2>
+                            <p className="text-sm text-slate-500 mb-6">Please verify the employee's email address before sending the Offer Letter.</p>
+
+                            <div className="space-y-4 text-left">
+                                <div>
+                                    <label className="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1">Confirm Recipient Email:</label>
+                                    <div className="relative">
+                                        <Mail className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-blue-500" />
+                                        <input
+                                            type="email"
+                                            value={offerForm.recipientEmail}
+                                            onChange={(e) => setOfferForm(prev => ({ ...prev, recipientEmail: e.target.value }))}
+                                            className="w-full pl-10 pr-4 py-3 bg-slate-50 rounded-xl border border-slate-200 font-medium text-slate-900 focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
+                                            placeholder="Verify email address"
+                                        />
+                                    </div>
+                                    <p className="text-[10px] text-slate-400 mt-1 italic">* You can edit this if the pre-filled email is incorrect.</p>
+                                </div>
+                            </div>
+
+                            <div className="grid grid-cols-2 gap-3 mt-8">
+                                <button
+                                    onClick={() => {
+                                        setShowEmailConfirmModal(false);
+                                        setShowOfferModal(true);
+                                    }}
+                                    className="px-4 py-2.5 border border-slate-200 rounded-xl text-slate-600 hover:bg-slate-50 font-semibold text-sm transition-colors"
+                                >
+                                    Go Back
+                                </button>
+                                {emailAuthFailed ? (
+                                    <button
+                                        onClick={handleManualSendFallback}
+                                        className="px-4 py-2.5 bg-emerald-600 text-white rounded-xl hover:bg-emerald-700 font-bold text-sm shadow-lg shadow-emerald-500/20 transition-all flex items-center justify-center animate-pulse"
+                                    >
+                                        Send Manually <ArrowLeft className="ml-2 w-4 h-4 rotate-180" />
+                                    </button>
+                                ) : (
+                                    <button
+                                        onClick={handleFinalSendEmail}
+                                        disabled={sendingEmail}
+                                        className="px-4 py-2.5 bg-blue-600 text-white rounded-xl hover:bg-blue-700 font-bold text-sm shadow-lg shadow-blue-500/20 transition-all flex items-center justify-center disabled:opacity-50"
+                                    >
+                                        {sendingEmail ? (
+                                            <Loader2 className="w-4 h-4 animate-spin" />
+                                        ) : (
+                                            <>Send Now <CheckCircle className="ml-2 w-4 h-4" /></>
+                                        )}
+                                    </button>
+                                )}
+                            </div>
+                            {emailAuthFailed && (
+                                <p className="text-[10px] text-emerald-600 mt-4 font-medium italic">
+                                    Offline Mode: Click "Send Manually" to open your email app directly.
+                                </p>
+                            )}
                         </div>
                     </div>
                 </div>
@@ -468,13 +711,13 @@ export default function CandidateDetail() {
                                 </div>
                             ) : (
                                 messages.map((msg, idx) => (
-                                    <div key={idx} className={`flex ${msg.sender === 'admin' ? 'justify-end' : 'justify-start'}`}>
+                                    <div key={idx} className={`flex ${msg.sender === 'admin' ? 'justify-end' : 'justify-start'} `}>
                                         <div className={`py-2 px-3 text-sm shadow-sm max-w-[80%] rounded-2xl ${msg.sender === 'admin'
                                             ? 'bg-blue-600 text-white rounded-tr-none'
                                             : 'bg-white border border-slate-200 text-slate-800 rounded-tl-none'
-                                            }`}>
+                                            } `}>
                                             <p>{msg.text}</p>
-                                            <div className={`text-[10px] mt-1 opacity-70 ${msg.sender === 'admin' ? 'text-blue-100 text-right' : 'text-slate-400'}`}>
+                                            <div className={`text-[10px] mt-1 opacity-70 ${msg.sender === 'admin' ? 'text-blue-100 text-right' : 'text-slate-400'} `}>
                                                 {new Date(msg.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                                             </div>
                                         </div>
@@ -526,6 +769,71 @@ export default function CandidateDetail() {
                     </div>
                 </div>
             )}
+
+            {/* System Configuration - For Mobile Testing */}
+            <div className="max-w-4xl mx-auto mt-12 mb-20 px-4">
+                <div className="bg-slate-900 rounded-3xl p-8 text-white shadow-2xl relative overflow-hidden">
+                    <div className="absolute top-0 right-0 w-64 h-64 bg-blue-500/10 rounded-full -mr-32 -mt-32 blur-3xl"></div>
+                    <div className="relative z-10">
+                        <div className="flex items-center gap-3 mb-6">
+                            <div className="w-10 h-10 bg-blue-500/20 rounded-xl flex items-center justify-center">
+                                <AlertCircle className="w-6 h-6 text-blue-400" />
+                            </div>
+                            <div>
+                                <h3 className="text-xl font-bold">System Configuration</h3>
+                                <p className="text-slate-400 text-sm">Required for mobile link testing</p>
+                            </div>
+                        </div>
+
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-8 items-end">
+                            <div className="space-y-4">
+                                <div>
+                                    <label className="block text-sm font-medium text-slate-400 mb-2">Backend IP Address (Important!)</label>
+                                    <input
+                                        type="text"
+                                        value={appBaseUrl}
+                                        onChange={(e) => {
+                                            const val = e.target.value;
+                                            setAppBaseUrl(val);
+                                            localStorage.setItem('appBaseUrl', val);
+                                        }}
+                                        placeholder="http://192.168.1.5:5000"
+                                        className="w-full bg-slate-800 border-slate-700 rounded-xl text-white py-3 px-4 focus:ring-2 focus:ring-blue-500 transition-all text-sm font-mono"
+                                    />
+                                </div>
+                                <div className="p-4 bg-orange-500/10 border border-orange-500/20 rounded-2xl">
+                                    <p className="text-xs text-orange-300 leading-relaxed mb-3">
+                                        <strong>⚠️ Warning:</strong> Your current URL is <code>{appBaseUrl}</code>. If it says <b>localhost</b>, it will <strong>NOT</strong> work on your phone.
+                                    </p>
+                                    {suggestedUrl && suggestedUrl !== appBaseUrl && (
+                                        <button
+                                            onClick={() => {
+                                                setAppBaseUrl(suggestedUrl);
+                                                localStorage.setItem('appBaseUrl', suggestedUrl);
+                                            }}
+                                            className="w-full bg-orange-500 hover:bg-orange-600 text-white py-2 px-4 rounded-lg text-xs font-bold transition-all shadow-lg active:scale-95 mb-2"
+                                        >
+                                            🚀 Auto-Fix for Mobile Testing
+                                        </button>
+                                    )}
+                                    <p className="text-[10px] text-slate-400 leading-relaxed">
+                                        Detecting server at: <code>{suggestedUrl || 'Counting...'}</code>.
+                                        Enter <code>http://[DEVICE_IP]:5000</code> for mobile.
+                                    </p>
+                                </div>
+                            </div>
+
+                            <div className="flex flex-col gap-3">
+                                <div className="flex items-center gap-2 text-emerald-400 text-sm font-medium bg-emerald-500/10 px-4 py-3 rounded-xl border border-emerald-500/20">
+                                    <CheckCircle className="w-4 h-4" />
+                                    <span>All links updated instantly</span>
+                                </div>
+                                <p className="text-[10px] text-slate-500 text-center uppercase tracking-widest font-bold">Current Link Prefix: {appBaseUrl}</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
         </div >
     );
 }

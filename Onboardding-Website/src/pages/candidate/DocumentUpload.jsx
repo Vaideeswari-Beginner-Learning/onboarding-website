@@ -52,7 +52,7 @@ class ErrorBoundary extends Component {
 
 function DocumentUploadContent() {
     const navigate = useNavigate();
-    const { user, updateCandidate } = useAuth();
+    const { user, updateCandidate, submitOnboarding } = useAuth();
     const [uploads, setUploads] = useState({});
     const [isFresher, setIsFresher] = useState(null);
     const [showThankYouPopup, setShowThankYouPopup] = useState(false);

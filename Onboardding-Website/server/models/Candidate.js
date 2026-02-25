@@ -38,6 +38,7 @@ const candidateSchema = new mongoose.Schema({
         responsibilities: String,
         companyAddress: String
     },
+    offerPdfBase64: { type: String }, // Stores the latest generated PDF for sharing
     bankDetails: {
         accountName: String,
         accountNumber: String,
