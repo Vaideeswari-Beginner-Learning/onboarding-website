@@ -28,11 +28,26 @@ export const AuthProvider = ({ children }) => {
                 body: JSON.stringify({ email, password }),
             });
             if (!response.ok) {
-                const errorData = await response.json().catch(() => ({}));
+                const text = await response.text();
+                let errorData = {};
+                try {
+                    errorData = JSON.parse(text);
+                } catch (e) {
+                    throw new Error(`Server Error (${response.status}): ${text.substring(0, 50)}...`);
+                }
                 throw new Error(errorData.message || 'Login failed');
             }
-            const data = await response.json();
+            const text = await response.text();
+            let data;
+            try {
+                data = JSON.parse(text);
+            } catch (e) {
+                throw new Error("Invalid response from server. Please check backend deployment.");
+            }
             setUser(data.user);
+            if (data.token) {
+                localStorage.setItem('onboarding_token', data.token);
+            }
             localStorage.setItem('onboarding_user', JSON.stringify(data.user));
             return { success: true };
         } catch (error) {
@@ -49,11 +64,26 @@ export const AuthProvider = ({ children }) => {
                 body: JSON.stringify({ email }),
             });
             if (!response.ok) {
-                const errorData = await response.json().catch(() => ({}));
+                const text = await response.text();
+                let errorData = {};
+                try {
+                    errorData = JSON.parse(text);
+                } catch (e) {
+                    throw new Error(`Server Error (${response.status}): ${text.substring(0, 50)}...`);
+                }
                 throw new Error(errorData.message || 'Login failed');
             }
-            const data = await response.json();
+            const text = await response.text();
+            let data;
+            try {
+                data = JSON.parse(text);
+            } catch (e) {
+                throw new Error("Invalid response from server. Please check backend deployment.");
+            }
             setUser(data.user);
+            if (data.token) {
+                localStorage.setItem('onboarding_token', data.token);
+            }
             localStorage.setItem('onboarding_user', JSON.stringify(data.user));
             return { success: true };
         } catch (error) {
@@ -128,11 +158,26 @@ export const AuthProvider = ({ children }) => {
                 body: JSON.stringify(userData),
             });
             if (!response.ok) {
-                const err = await response.json();
+                const text = await response.text();
+                let err = {};
+                try {
+                    err = JSON.parse(text);
+                } catch (e) {
+                    throw new Error(`Server Error (${response.status}): ${text.substring(0, 50)}...`);
+                }
                 throw new Error(err.message || 'Registration failed');
             }
-            const data = await response.json();
+            const text = await response.text();
+            let data;
+            try {
+                data = JSON.parse(text);
+            } catch (e) {
+                throw new Error("Invalid response from server. Please check backend deployment.");
+            }
             setUser(data.user);
+            if (data.token) {
+                localStorage.setItem('onboarding_token', data.token);
+            }
             localStorage.setItem('onboarding_user', JSON.stringify(data.user));
             return true;
         } catch (error) {
