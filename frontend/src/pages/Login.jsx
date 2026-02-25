@@ -153,13 +153,13 @@ export default function Login() {
                                         type="password"
                                         required
                                         className="focus:ring-blue-500 focus:border-blue-500 block w-full pl-10 sm:text-sm border-slate-300 rounded-lg p-2.5"
-                                        placeholder="admin"
+                                        placeholder="Enter password"
                                         value={formData.password}
                                         onChange={(e) => setFormData({ ...formData, password: e.target.value })}
                                     />
                                 </div>
-                                <p className="mt-2 text-xs text-center text-slate-500">
-                                    (Demo: admin@gmail.com / admin)
+                                <p className="mt-2 text-[10px] text-center text-slate-500 italic">
+                                    (Hint: info@forgeindiaconnect.com / Forgeindia@09 <br /> OR admin@gmail.com / admin)
                                 </p>
                             </div>
 

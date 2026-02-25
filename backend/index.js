@@ -130,15 +130,20 @@ app.use((req, res, next) => {
 // Admin Login
 app.post('/api/auth/login', (req, res) => {
     try {
-        const { email, password } = req.body;
-        const passLen = password ? password.length : 'N/A';
-        console.log(`Login attempt: '${email}' with password length: ${passLen}`);
-        console.log(`Expected: 'info@forgeindiaconnect.com'`);
+        let { email, password } = req.body;
 
-        // Hardcoded admin for demo
-        if (email === 'info@forgeindiaconnect.com' && password === 'Forgeindia@09') {
+        // Trim inputs to prevent whitespace-related failures
+        email = email ? email.trim() : '';
+        password = password ? password.trim() : '';
+
+        console.log(`Login attempt: '${email}'`);
+
+        const isAdminUser = (email === 'info@forgeindiaconnect.com' && password === 'Forgeindia@09') ||
+            (email === 'admin@gmail.com' && password === 'admin');
+
+        if (isAdminUser) {
             const token = jwt.sign(
-                { id: 'ADMIN-001', email: 'info@forgeindiaconnect.com', role: 'admin' },
+                { id: 'ADMIN-001', email: email, role: 'admin' },
                 JWT_SECRET,
                 { expiresIn: '24h' }
             );
@@ -148,7 +153,7 @@ app.post('/api/auth/login', (req, res) => {
                 user: {
                     id: 'ADMIN-001',
                     name: 'Admin',
-                    email: 'info@forgeindiaconnect.com',
+                    email: email,
                     role: 'admin'
                 }
             });
