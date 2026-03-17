@@ -83,7 +83,7 @@ app.get('/api/health-check', (req, res) => {
     const dbStatus = mongoose.connection.readyState === 1 ? 'Connected' : 'Disconnected';
     res.json({
         status: 'ok',
-        version: '1.4.1-STABLE',
+        version: '1.4.2-STABLE',
         database: dbStatus,
         message: dbStatus === 'Connected' ? 'System fully operational' : 'Database connection pending/failed',
         timestamp: new Date().toISOString()
