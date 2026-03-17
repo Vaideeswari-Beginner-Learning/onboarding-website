@@ -2,11 +2,13 @@ import React, { createContext, useContext, useState, useEffect } from 'react';
 
 const AuthContext = createContext(null);
 
-export const FRONTEND_VERSION = '1.0.3-STABLE';
+export const FRONTEND_VERSION = '1.0.4-DEBUG';
 export const API_BASE = import.meta.env.VITE_API_URL || 'https://onboarding-website-1.onrender.com';
 // Fallback logic for local development if VITE_API_URL is missing
 const getApiBase = () => {
-    if (import.meta.env.VITE_API_URL) return import.meta.env.VITE_API_URL;
+    const envUrl = import.meta.env.VITE_API_URL;
+    if (envUrl && envUrl.startsWith('http')) return envUrl;
+
     if (typeof window !== 'undefined') {
         const { hostname, protocol } = window.location;
         if (hostname === 'localhost' || hostname === '127.0.0.1' || hostname.startsWith('192.168.')) {
@@ -15,7 +17,7 @@ const getApiBase = () => {
     }
     return 'https://onboarding-website-1.onrender.com';
 };
-const ACTUAL_API_BASE = getApiBase();
+export const ACTUAL_API_BASE = getApiBase();
 
 export const AuthProvider = ({ children }) => {
     const [user, setUser] = useState(null);

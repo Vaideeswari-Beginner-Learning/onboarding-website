@@ -1,5 +1,5 @@
 import { Link, useNavigate } from 'react-router-dom';
-import { useAuth } from '../context/AuthContext';
+import { useAuth, FRONTEND_VERSION, ACTUAL_API_BASE } from '../context/AuthContext';
 import { LogOut, User, Building2 } from 'lucide-react';
 
 export default function Navbar() {
@@ -16,7 +16,6 @@ export default function Navbar() {
             <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
                 <div className="flex justify-between h-16 items-center">
                     <Link to="/" className="flex items-center gap-2">
-                        {/* Use the same logo.jpg as the offer letter if available, or fallback to the icon */}
                         <img src="/logo.jpg" alt="Logo" className="h-10 w-auto object-contain" onError={(e) => { e.target.style.display = 'none'; e.target.nextSibling.style.display = 'block'; }} />
                         <div className="bg-blue-600 p-1.5 rounded-lg hidden">
                             <Building2 className="w-6 h-6 text-white" />
@@ -70,8 +69,9 @@ export default function Navbar() {
                     </div>
                 </div>
             </div>
-            <div className="absolute bottom-0 right-2 pointer-events-none">
-                <span className="text-[8px] text-slate-300 font-mono">v1.0.3</span>
+            <div className="absolute bottom-0 right-2 pointer-events-none flex flex-col items-end">
+                <span className="text-[8px] text-slate-300 font-mono">{FRONTEND_VERSION}</span>
+                <span className="text-[6px] text-slate-200 font-mono opacity-30">{ACTUAL_API_BASE}</span>
             </div>
         </nav>
     );
