@@ -2,20 +2,20 @@ import React, { createContext, useContext, useState, useEffect } from 'react';
 
 const AuthContext = createContext(null);
 
-export const FRONTEND_VERSION = '1.0.4-DEBUG';
-export const API_BASE = import.meta.env.VITE_API_URL || 'https://onboarding-website-1.onrender.com';
+export const FRONTEND_VERSION = '2.0.0-UNIFIED';
+export const API_BASE = import.meta.env.VITE_API_URL || '';
 // Fallback logic for local development if VITE_API_URL is missing
 const getApiBase = () => {
-    const envUrl = import.meta.env.VITE_API_URL;
-    if (envUrl && envUrl.startsWith('http')) return envUrl;
-
+    // For local development with Vite (port 5173), we still need the absolute URL to port 5000
     if (typeof window !== 'undefined') {
-        const { hostname, protocol } = window.location;
-        if (hostname === 'localhost' || hostname === '127.0.0.1' || hostname.startsWith('192.168.')) {
+        const { hostname, protocol, port } = window.location;
+        // If we are on Vite's dev port, point to the backend port
+        if (port === '5173' || hostname === 'localhost' || hostname === '127.0.0.1') {
             return `${protocol}//${hostname}:5000`;
         }
     }
-    return 'https://onboarding-website-1.onrender.com';
+    // In production (Unified Render Deployment), use relative paths
+    return ''; 
 };
 export const ACTUAL_API_BASE = getApiBase();
 

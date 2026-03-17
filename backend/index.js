@@ -880,18 +880,16 @@ app.all('/api/*', (req, res) => {
 
 // --- Serve Frontend Production Build ---
 const __dirname = path.resolve();
-const distPath = path.join(__dirname, '..', 'frontend', 'dist');
+const publicPath = path.join(__dirname, 'public');
 
-if (fs.existsSync(distPath)) {
-    console.log(`Serving frontend from: ${distPath}`);
-    app.use(express.static(distPath));
-} else {
-    console.warn(`Frontend dist folder not found at: ${distPath}. Build it using 'npm run build' in the frontend folder.`);
+if (fs.existsSync(publicPath)) {
+    console.log(`Serving frontend from: ${publicPath}`);
+    app.use(express.static(publicPath));
 }
 
 // SPA Catch-all (must be after all API routes and static files)
 app.get('*', (req, res) => {
-    const indexFile = path.join(distPath, 'index.html');
+    const indexFile = path.join(publicPath, 'index.html');
     if (fs.existsSync(indexFile)) {
         res.sendFile(indexFile);
     } else {

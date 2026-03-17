@@ -3,9 +3,8 @@ services:
     name: onboarding-backend
     env: node
     plan: free
-    rootDir: backend
-    buildCommand: npm install
-    startCommand: node index.js
+    buildCommand: cd backend && npm install && cd ../frontend && npm install && npm run build && cp -r dist/* ../backend/public/
+    startCommand: cd backend && node index.js
     envVars:
       - key: PORT
         value: 5000
