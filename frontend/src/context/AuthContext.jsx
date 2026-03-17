@@ -2,6 +2,20 @@ import React, { createContext, useContext, useState, useEffect } from 'react';
 
 const AuthContext = createContext(null);
 
+export const API_BASE = import.meta.env.VITE_API_URL || '';
+// Fallback logic for local development if VITE_API_URL is missing
+const getApiBase = () => {
+    if (API_BASE) return API_BASE;
+    if (typeof window !== 'undefined') {
+        const { hostname, protocol } = window.location;
+        if (hostname === 'localhost' || hostname === '127.0.0.1' || hostname.startsWith('192.168.')) {
+            return `${protocol}//${hostname}:5000`;
+        }
+    }
+    return 'https://onboarding-website-1.onrender.com';
+};
+const ACTUAL_API_BASE = getApiBase();
+
 export const AuthProvider = ({ children }) => {
     const [user, setUser] = useState(null);
     const [loading, setLoading] = useState(true);
@@ -15,25 +29,30 @@ export const AuthProvider = ({ children }) => {
         setLoading(false);
     }, []);
 
-    const API_BASE = import.meta.env.VITE_API_URL || '';
     console.log('DEBUG: VITE_API_URL =', import.meta.env.VITE_API_URL);
-    console.log('DEBUG: API_BASE =', API_BASE);
+    console.log('DEBUG: ACTUAL_API_BASE =', ACTUAL_API_BASE);
+    if (typeof window !== 'undefined') {
+        console.log('DEBUG: Current Location =', window.location.origin);
+    }
 
 
     const loginAdmin = async (email, password) => {
         try {
-            const response = await fetch(`${API_BASE}/api/auth/login`, {
+            const url = `${ACTUAL_API_BASE}/api/auth/login`;
+            console.log(`DEBUG: Calling Login URL: ${url}`);
+            const response = await fetch(url, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ email, password }),
             });
             if (!response.ok) {
                 const text = await response.text();
+                console.error(`DEBUG: Login response not OK (${response.status}):`, text.substring(0, 100));
                 let errorData = {};
                 try {
                     errorData = JSON.parse(text);
                 } catch (e) {
-                    throw new Error(`Server Error (${response.status}): ${text.substring(0, 50)}...`);
+                    throw new Error(`Server Error (${response.status}): ${text.includes('<!DOCTYPE html>') ? 'Received HTML instead of JSON' : text.substring(0, 50)}...`);
                 }
                 throw new Error(errorData.message || 'Login failed');
             }
@@ -58,18 +77,21 @@ export const AuthProvider = ({ children }) => {
 
     const loginCandidate = async (email) => {
         try {
-            const response = await fetch(`${API_BASE}/api/auth/candidate/login`, {
+            const url = `${ACTUAL_API_BASE}/api/auth/candidate/login`;
+            console.log(`DEBUG: Calling Candidate Login URL: ${url}`);
+            const response = await fetch(url, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ email }),
             });
             if (!response.ok) {
                 const text = await response.text();
+                console.error(`DEBUG: Candidate Login response not OK (${response.status}):`, text.substring(0, 100));
                 let errorData = {};
                 try {
                     errorData = JSON.parse(text);
                 } catch (e) {
-                    throw new Error(`Server Error (${response.status}): ${text.substring(0, 50)}...`);
+                    throw new Error(`Server Error (${response.status}): ${text.includes('<!DOCTYPE html>') ? 'Received HTML instead of JSON' : text.substring(0, 50)}...`);
                 }
                 throw new Error(errorData.message || 'Login failed');
             }
@@ -103,7 +125,7 @@ export const AuthProvider = ({ children }) => {
             if (!email) throw new Error('No user email found to update');
 
             const token = localStorage.getItem('onboarding_token');
-            const response = await fetch(`${API_BASE}/api/candidates/update`, {
+            const response = await fetch(`${ACTUAL_API_BASE}/api/candidates/update`, {
                 method: 'PUT',
                 headers: {
                     'Content-Type': 'application/json',
@@ -133,7 +155,7 @@ export const AuthProvider = ({ children }) => {
 
     const verifyOtp = async (email, otp) => {
         try {
-            const response = await fetch(`${API_BASE}/api/auth/otp/verify`, {
+            const response = await fetch(`${ACTUAL_API_BASE}/api/auth/otp/verify`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ email, otp }),
@@ -156,18 +178,21 @@ export const AuthProvider = ({ children }) => {
 
     const register = async (userData) => {
         try {
-            const response = await fetch(`${API_BASE}/api/auth/register`, {
+            const url = `${ACTUAL_API_BASE}/api/auth/register`;
+            console.log(`DEBUG: Calling Register URL: ${url}`);
+            const response = await fetch(url, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(userData),
             });
             if (!response.ok) {
                 const text = await response.text();
+                console.error(`DEBUG: Register response not OK (${response.status}):`, text.substring(0, 100));
                 let err = {};
                 try {
                     err = JSON.parse(text);
                 } catch (e) {
-                    throw new Error(`Server Error (${response.status}): ${text.substring(0, 50)}...`);
+                    throw new Error(`Server Error (${response.status}): ${text.includes('<!DOCTYPE html>') ? 'Received HTML instead of JSON' : text.substring(0, 50)}...`);
                 }
                 throw new Error(err.message || 'Registration failed');
             }
@@ -194,7 +219,7 @@ export const AuthProvider = ({ children }) => {
     const submitOnboarding = async (name, email) => {
         try {
             const token = localStorage.getItem('onboarding_token');
-            const response = await fetch(`${API_BASE}/api/onboard`, {
+            const response = await fetch(`${ACTUAL_API_BASE}/api/onboard`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
