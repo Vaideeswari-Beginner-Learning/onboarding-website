@@ -1,0 +1,10 @@
+{
+  "name": "onboarding-unified",
+  "version": "2.0.3",
+  "private": true,
+  "description": "Unified build for Render deployment",
+  "scripts": {
+    "build": "cd backend && npm install && cd ../frontend && npm install && npm run build && cp -r dist/* ../backend/public/",
+    "start": "cd backend && node index.js"
+  }
+}
