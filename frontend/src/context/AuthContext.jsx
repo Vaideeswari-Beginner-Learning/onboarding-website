@@ -2,7 +2,7 @@ import React, { createContext, useContext, useState, useEffect } from 'react';
 
 const AuthContext = createContext(null);
 
-export const FRONTEND_VERSION = '2.0.0-UNIFIED';
+export const FRONTEND_VERSION = '2.0.1-VERBOSE';
 export const API_BASE = import.meta.env.VITE_API_URL || '';
 // Fallback logic for local development if VITE_API_URL is missing
 const getApiBase = () => {
@@ -43,7 +43,9 @@ export const AuthProvider = ({ children }) => {
     const loginAdmin = async (email, password) => {
         try {
             const url = `${ACTUAL_API_BASE}/api/auth/login`;
-            console.log(`DEBUG: Calling Login URL: ${url}`);
+            console.log('--- API CALL START ---');
+            console.log('URL:', url);
+            console.log('Method: POST');
             const response = await fetch(url, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
@@ -82,7 +84,8 @@ export const AuthProvider = ({ children }) => {
     const loginCandidate = async (email) => {
         try {
             const url = `${ACTUAL_API_BASE}/api/auth/candidate/login`;
-            console.log(`DEBUG: Calling Candidate Login URL: ${url}`);
+            console.log('--- CANDIDATE LOGIN START ---');
+            console.log('URL:', url);
             const response = await fetch(url, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
@@ -183,7 +186,8 @@ export const AuthProvider = ({ children }) => {
     const register = async (userData) => {
         try {
             const url = `${ACTUAL_API_BASE}/api/auth/register`;
-            console.log(`DEBUG: Calling Register URL: ${url}`);
+            console.log('--- REGISTER START ---');
+            console.log('URL:', url);
             const response = await fetch(url, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
