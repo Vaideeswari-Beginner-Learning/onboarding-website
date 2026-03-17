@@ -70,6 +70,9 @@ export default function Navbar() {
                     </div>
                 </div>
             </div>
+            <div className="absolute bottom-0 right-2 pointer-events-none">
+                <span className="text-[8px] text-slate-300 font-mono">v1.0.3</span>
+            </div>
         </nav>
     );
 }

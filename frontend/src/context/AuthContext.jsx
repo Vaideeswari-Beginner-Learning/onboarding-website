@@ -2,10 +2,11 @@ import React, { createContext, useContext, useState, useEffect } from 'react';
 
 const AuthContext = createContext(null);
 
-export const API_BASE = import.meta.env.VITE_API_URL || '';
+export const FRONTEND_VERSION = '1.0.3-STABLE';
+export const API_BASE = import.meta.env.VITE_API_URL || 'https://onboarding-website-1.onrender.com';
 // Fallback logic for local development if VITE_API_URL is missing
 const getApiBase = () => {
-    if (API_BASE) return API_BASE;
+    if (import.meta.env.VITE_API_URL) return import.meta.env.VITE_API_URL;
     if (typeof window !== 'undefined') {
         const { hostname, protocol } = window.location;
         if (hostname === 'localhost' || hostname === '127.0.0.1' || hostname.startsWith('192.168.')) {
@@ -33,6 +34,7 @@ export const AuthProvider = ({ children }) => {
     console.log('DEBUG: ACTUAL_API_BASE =', ACTUAL_API_BASE);
     if (typeof window !== 'undefined') {
         console.log('DEBUG: Current Location =', window.location.origin);
+        console.log('DEBUG: Frontend Version =', FRONTEND_VERSION);
     }
 
 
