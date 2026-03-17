@@ -2,10 +2,13 @@ import React, { createContext, useContext, useState, useEffect } from 'react';
 
 const AuthContext = createContext(null);
 
-export const FRONTEND_VERSION = '2.0.1-VERBOSE';
+export const FRONTEND_VERSION = '2.0.2-FINAL';
 export const API_BASE = import.meta.env.VITE_API_URL || '';
 // Fallback logic for local development if VITE_API_URL is missing
 const getApiBase = () => {
+    // If explicit URL provided via environment variable, use it
+    if (import.meta.env.VITE_API_URL) return import.meta.env.VITE_API_URL;
+
     // For local development with Vite (port 5173), we still need the absolute URL to port 5000
     if (typeof window !== 'undefined') {
         const { hostname, protocol, port } = window.location;
@@ -14,7 +17,7 @@ const getApiBase = () => {
             return `${protocol}//${hostname}:5000`;
         }
     }
-    // In production, fallback to Render URL if not serving from same origin
+    // In production, fallback to Render URL
     return 'https://onboarding-website-1.onrender.com'; 
 };
 export const ACTUAL_API_BASE = getApiBase();
