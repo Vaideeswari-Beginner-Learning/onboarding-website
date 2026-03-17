@@ -4,7 +4,7 @@
   "type": "module",
   "scripts": {
     "start": "node index.js",
-    "dev": "nodemon index.js"
+    "dev": "nodemon --ext js,mjs,cjs,json,env index.js"
   },
   "dependencies": {
     "cors": "^2.8.5",

@@ -1,8 +1,8 @@
 import { useState, useEffect, useRef } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import { useAuth } from '../../context/AuthContext';
+import { useAuth, API_BASE } from '../../context/AuthContext';
 import Navbar from '../../components/Navbar';
-import { ArrowLeft, Download, CheckCircle, XCircle, FileText, User, Eye, PartyPopper, Mail, Loader2, AlertCircle } from 'lucide-react';
+import { ArrowLeft, Download, CheckCircle, XCircle, FileText, User, Eye, PartyPopper, Mail, Loader2, AlertCircle, Settings, Key } from 'lucide-react';
 import { generateOfferLetter, generateOfferLetterBase64 } from '../../utils/offerLetterGenerator';
 
 export default function CandidateDetail() {
@@ -19,15 +19,19 @@ export default function CandidateDetail() {
     const [savingSetup, setSavingSetup] = useState(false);
     const [appBaseUrl, setAppBaseUrl] = useState(localStorage.getItem('appBaseUrl') || window.location.origin);
 
-    // --- Chat Hooks (Moved to Top) ---
+    // --- Chat Hooks ---
     const [showChat, setShowChat] = useState(false);
     const [messages, setMessages] = useState([]);
     const [chatInput, setChatInput] = useState('');
     const [suggestedUrl, setSuggestedUrl] = useState('');
-    const [mailerStatus, setMailerStatus] = useState({ configured: false, user: '' });
+    const [mailerStatus, setMailerStatus] = useState({ configured: false, user: '', service: 'gmail' });
+    const [showSettingsModal, setShowSettingsModal] = useState(false);
+    const [emailSettings, setEmailSettings] = useState({ email: '', password: '', service: 'gmail' });
+    const [testingConnection, setTestingConnection] = useState(false);
+    const [savingSettings, setSavingSettings] = useState(false);
+    const [testResult, setTestResult] = useState(null);
     const chatEndRef = useRef(null);
 
-    const API_BASE = import.meta.env.VITE_API_URL || '';
 
     // Fetch Candidate Details
     useEffect(() => {
@@ -55,19 +59,32 @@ export default function CandidateDetail() {
         // Fetch suggested IP for mobile testing
         const fetchSystemInfo = async () => {
             try {
-                const response = await fetch(`${API_BASE}/api/system-info`);
+                const token = localStorage.getItem('onboarding_token');
+                const response = await fetch(`${API_BASE}/api/system-info`, {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
                 if (response.ok) {
                     const data = await response.json();
                     if (data.suggestedUrl) {
                         setSuggestedUrl(data.suggestedUrl);
-                        // Auto-fill if it's currently localhost
                         if (appBaseUrl.includes('localhost')) {
                             setAppBaseUrl(data.suggestedUrl);
                             localStorage.setItem('appBaseUrl', data.suggestedUrl);
                         }
                     }
                     if (data.mailerConfigured !== undefined) {
-                        setMailerStatus({ configured: data.mailerConfigured, user: data.mailerUser });
+                        setMailerStatus({
+                            configured: data.mailerConfigured,
+                            user: data.mailerUser,
+                            service: data.mailerService || 'gmail'
+                        });
+                        if (data.mailerUser && data.mailerUser !== 'Not Configured') {
+                            setEmailSettings(prev => ({
+                                ...prev,
+                                email: data.mailerUser,
+                                service: data.mailerService || 'gmail'
+                            }));
+                        }
                     }
                 }
             } catch (err) { console.log("System info fetch failed"); }
@@ -117,7 +134,6 @@ export default function CandidateDetail() {
             text: chatInput
         };
 
-        // Optimistic update
         setMessages(prev => [...prev, { ...newMessage, timestamp: Date.now() }]);
         setChatInput('');
 
@@ -151,7 +167,6 @@ export default function CandidateDetail() {
         recipientEmail: ''
     });
 
-    // Populate details when candidate loads
     useEffect(() => {
         if (candidate) {
             setOfferForm(prev => ({
@@ -169,15 +184,12 @@ export default function CandidateDetail() {
         setOfferForm(prev => ({ ...prev, [name]: value }));
     };
 
-    // --- Helper for stable mobile links ---
     const getStableBaseUrl = (rawUrl) => {
         if (!rawUrl) return window.location.origin.replace(':5173', ':5000');
-        // Force port 5000 for backend routes
         let url = rawUrl.trim();
         if (url.includes(':5173')) {
             url = url.replace(':5173', ':5000');
         } else if (!url.includes(':5000') && !url.includes('localhost')) {
-            // Attempt to add :5000 if it looks like an IP
             const ipv4Regex = /\b(?:\d{1,3}\.){3}\d{1,3}\b/;
             if (ipv4Regex.test(url) && !url.includes(':')) {
                 url = `${url}:5000`;
@@ -188,7 +200,6 @@ export default function CandidateDetail() {
 
     const handlePrepareOffer = async (e) => {
         if (e) e.preventDefault();
-        // 1. Save offer details to database locally first
         try {
             const token = localStorage.getItem('onboarding_token');
             const response = await fetch(`${API_BASE}/api/admin/generate-offer`, {
@@ -204,7 +215,6 @@ export default function CandidateDetail() {
             });
 
             if (response.ok) {
-                // Details saved, now open the second step (Email Confirmation)
                 setShowOfferModal(false);
                 setShowEmailConfirmModal(true);
             } else {
@@ -223,9 +233,7 @@ export default function CandidateDetail() {
         setSendingEmail(true);
         setEmailAuthFailed(false);
         try {
-            // 2. Automatically trigger the email sending process
             const pdfBase64 = await generateOfferLetterBase64({ ...candidate, offerDetails: offerForm });
-
             const token = localStorage.getItem('onboarding_token');
             const emailResponse = await fetch(`${API_BASE}/api/admin/send-offer-email`, {
                 method: 'POST',
@@ -237,7 +245,7 @@ export default function CandidateDetail() {
                     candidateId: candidate._id,
                     pdfBase64,
                     customEmail: offerForm.recipientEmail,
-                    appBaseUrl: getStableBaseUrl(appBaseUrl) // Send sanitized URL to server
+                    appBaseUrl: getStableBaseUrl(appBaseUrl)
                 })
             });
 
@@ -248,7 +256,6 @@ export default function CandidateDetail() {
                 setShowEmailConfirmModal(false);
                 setCandidate(prev => ({ ...prev, offerLetterStatus: 'Sent' }));
             } else if (emailData.error === 'AUTH_FAILED') {
-                // If auth fails, don't alert. Just show the fallback button in the modal.
                 setEmailAuthFailed(true);
             } else {
                 const detailedError = emailData.detail ? `\n\nDetail: ${emailData.detail}` : (emailData.message || 'Check connection');
@@ -266,8 +273,6 @@ export default function CandidateDetail() {
         setSendingEmail(true);
         try {
             const pdfBase64 = await generateOfferLetterBase64({ ...candidate, offerDetails: offerForm });
-
-            // Save PDF to database first so the link in Gmail works!
             const token = localStorage.getItem('onboarding_token');
             await fetch(`${API_BASE}/api/admin/save-offer-pdf`, {
                 method: 'POST',
@@ -282,18 +287,13 @@ export default function CandidateDetail() {
             });
 
             const subject = encodeURIComponent(`Offer Letter - Forge India Connect`);
-
-            // SMART PORT FIX: If user entered port 5173, we MUST change it to 5000 for the PDF route
             let stableBaseUrl = appBaseUrl.replace(':5173', ':5000');
-            // If it's just localhost, it won't work on mobile anyway, but let's at least fix the port
             if (stableBaseUrl.includes('localhost') && !stableBaseUrl.includes(':5000')) {
                 stableBaseUrl = stableBaseUrl.replace(':5173', ':5000');
             }
 
             const downloadUrl = `${stableBaseUrl}/api/public/offer-pdf/${candidate._id}`;
-            const body = encodeURIComponent(`Dear ${offerForm.employeeName},\n\nWe are delighted to offer you the position of ${offerForm.jobRole}. \n\nYou can download your offer letter here: ${downloadUrl} \n\nPlease find the details in the attached documents.\n\nBest Regards,\nHR Team`);
-
-            // Use Gmail Web Compose URL instead of generic mailto
+            const body = encodeURIComponent(`Dear ${offerForm.employeeName},\n\nCongratulations! We are pleased to offer you the position of ${offerForm.jobRole}.\n\nYour official Offer Letter has been prepared and is ready for review.\n\nView/Download Offer Letter: ${downloadUrl}\n\n(Note: If you expected a PDF attachment, please ensure the HR System's Gmail SMTP is correctly configured with a 16-digit App Password).\n\nBest Regards,\nHR Administration Team\n${offerForm.companyName}`);
             const gmailUrl = `https://mail.google.com/mail/?view=cm&fs=1&to=${offerForm.recipientEmail}&su=${subject}&body=${body}`;
             window.open(gmailUrl, '_blank');
 
@@ -307,9 +307,56 @@ export default function CandidateDetail() {
         }
     };
 
+    const handleTestConnection = async (e) => {
+        e.preventDefault();
+        setTestingConnection(true);
+        setTestResult(null);
+        try {
+            const token = localStorage.getItem('onboarding_token');
+            const response = await fetch(`${API_BASE}/api/admin/test-email-connection`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${token}`
+                },
+                body: JSON.stringify(emailSettings)
+            });
+            const data = await response.json();
+            setTestResult({ success: response.ok, message: data.message });
+        } catch (error) {
+            setTestResult({ success: false, message: 'Connection failed. Check your network.' });
+        } finally {
+            setTestingConnection(false);
+        }
+    };
 
-
-    // --- Conditional Rendering Checks ---
+    const handleSaveSettings = async (e) => {
+        e.preventDefault();
+        setSavingSettings(true);
+        try {
+            const token = localStorage.getItem('onboarding_token');
+            const response = await fetch(`${API_BASE}/api/admin/update-email-setup`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${token}`
+                },
+                body: JSON.stringify(emailSettings)
+            });
+            const data = await response.json();
+            if (response.ok) {
+                alert('✅ Settings saved successfully!');
+                setShowSettingsModal(false);
+                setMailerStatus({ configured: true, user: emailSettings.email });
+            } else {
+                alert(`❌ Failed to save: ${data.message}`);
+            }
+        } catch (error) {
+            alert('❌ System Error: Unable to save settings.');
+        } finally {
+            setSavingSettings(false);
+        }
+    };
 
     if (loading) {
         return <div className="min-h-screen flex items-center justify-center bg-slate-50">
@@ -419,10 +466,13 @@ export default function CandidateDetail() {
                         </div>
                         <div className="flex flex-wrap gap-3 mt-6 md:mt-0 items-center">
                             {!mailerStatus.configured && (
-                                <div className="mr-2 flex items-center gap-1.5 px-3 py-1.5 bg-rose-50 text-rose-600 rounded-lg border border-rose-100 animate-pulse">
-                                    <AlertCircle className="w-4 h-4" />
-                                    <span className="text-[10px] font-bold uppercase">Mailer Not Ready</span>
-                                </div>
+                                <button
+                                    onClick={() => setShowSettingsModal(true)}
+                                    className="mr-2 flex items-center gap-1.5 px-3 py-1.5 bg-rose-50 text-rose-600 rounded-lg border border-rose-100 animate-pulse hover:bg-rose-100 transition-colors"
+                                >
+                                    <Settings className="w-4 h-4" />
+                                    <span className="text-[10px] font-bold uppercase">Configure Mailer</span>
+                                </button>
                             )}
                             <button
                                 className="inline-flex items-center px-5 py-2.5 rounded-xl shadow-lg shadow-indigo-200 text-sm font-bold text-white bg-indigo-600 hover:bg-indigo-700 transition-all hover:-translate-y-0.5"
@@ -446,7 +496,6 @@ export default function CandidateDetail() {
                 </div>
 
                 <div className="grid md:grid-cols-3 gap-6">
-                    {/* Personal Details */}
                     <div className="md:col-span-1 space-y-6">
                         <div className="bg-white rounded-2xl shadow-sm border border-slate-100 p-6">
                             <h3 className="text-lg font-bold text-slate-900 mb-4 flex items-center">
@@ -475,7 +524,6 @@ export default function CandidateDetail() {
                             </div>
                         </div>
 
-                        {/* Bank Details */}
                         <div className="bg-white rounded-2xl shadow-sm border border-slate-100 p-6">
                             <h3 className="text-lg font-bold text-slate-900 mb-4 flex items-center">
                                 <FileText className="w-5 h-5 mr-2 text-slate-500" />
@@ -508,14 +556,12 @@ export default function CandidateDetail() {
                         </div>
                     </div>
 
-                    {/* Documents */}
                     <div className="md:col-span-2 space-y-6">
                         <div className="bg-white rounded-2xl shadow-sm border border-slate-100 p-6">
                             <h3 className="text-lg font-bold text-slate-900 mb-6 flex items-center">
                                 <FileText className="w-5 h-5 mr-2 text-slate-500" />
                                 Submitted Documents
                             </h3>
-
                             <div className="space-y-4">
                                 {docs.length === 0 ? (
                                     <div className="text-center py-12 bg-slate-50 rounded-2xl border-2 border-dashed border-slate-200">
@@ -563,7 +609,7 @@ export default function CandidateDetail() {
                         </div>
                     </div>
                 </div>
-            </main >
+            </main>
 
             {/* Offer Letter Modal */}
             {showOfferModal && (
@@ -695,9 +741,17 @@ export default function CandidateDetail() {
                                 )}
                             </div>
                             {emailAuthFailed && (
-                                <p className="text-[10px] text-emerald-600 mt-4 font-medium italic">
-                                    Offline Mode: Click "Send Manually" to open your email app directly.
-                                </p>
+                                <div className="mt-4 p-4 bg-rose-50 border border-rose-100 rounded-xl text-left">
+                                    <p className="text-xs font-bold text-rose-700 flex items-center gap-1.5 mb-1">
+                                        <AlertCircle className="w-3.5 h-3.5" /> Email Delivery Failed
+                                    </p>
+                                    <p className="text-[10px] text-rose-600 leading-relaxed">
+                                        The system couldn't send the PDF attachment automatically. This is usually due to an <strong>invalid Gmail App Password</strong> in your .env file.
+                                    </p>
+                                    <p className="text-[10px] text-rose-600 mt-2 italic font-medium">
+                                        Offline Backup: Click "Send Manually" below to open Gmail with a download link instead.
+                                    </p>
+                                </div>
                             )}
                         </div>
                     </div>
@@ -709,7 +763,6 @@ export default function CandidateDetail() {
                 <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
                     <div className="absolute inset-0 bg-slate-900/40 backdrop-blur-sm" onClick={() => setShowChat(false)}></div>
                     <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md h-[600px] flex flex-col relative z-10 overflow-hidden animate-in zoom-in-95 duration-200">
-                        {/* Chat Header */}
                         <div className="bg-blue-600 p-4 flex justify-between items-center text-white shrink-0">
                             <div className="flex items-center">
                                 <div className="w-8 h-8 bg-blue-500 rounded-full flex items-center justify-center mr-3 font-bold border border-blue-400">
@@ -725,7 +778,6 @@ export default function CandidateDetail() {
                             </button>
                         </div>
 
-                        {/* Chat Messages */}
                         <div className="flex-1 overflow-y-auto p-4 space-y-3 bg-slate-50">
                             {messages.length === 0 ? (
                                 <div className="text-center text-slate-400 mt-10">
@@ -750,7 +802,6 @@ export default function CandidateDetail() {
                             <div ref={chatEndRef} />
                         </div>
 
-                        {/* Chat Input */}
                         <form onSubmit={handleSendChat} className="p-3 bg-white border-t border-slate-100 flex gap-2 shrink-0">
                             <input
                                 type="text"
@@ -760,26 +811,23 @@ export default function CandidateDetail() {
                                 className="flex-1 border-slate-200 rounded-lg text-sm focus:ring-blue-500 focus:border-blue-500"
                             />
                             <button type="submit" className="bg-blue-600 text-white p-2 rounded-lg hover:bg-blue-700 transition-colors">
-                                <ArrowLeft className="w-4 h-4 rotate-180" /> {/* Send icon hack if Send not imported, but wait, look at imports */}
+                                <ArrowLeft className="w-4 h-4 rotate-180" />
                             </button>
                         </form>
                     </div>
                 </div>
             )}
 
-            {/* Done Popup - kept as is */}
+            {/* Done Popup */}
             {showDonePopup && (
                 <div className="fixed inset-0 flex items-center justify-center z-50 p-4 animate-in fade-in zoom-in duration-300">
                     <div className="bg-white rounded-3xl shadow-2xl p-8 max-w-sm w-full text-center relative overflow-hidden border border-slate-100">
                         <div className="absolute top-0 left-0 w-full h-2 bg-gradient-to-r from-blue-500 via-indigo-500 to-purple-500"></div>
-
                         <div className="w-20 h-20 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-6 text-green-600">
                             <PartyPopper className="w-10 h-10" />
                         </div>
-
                         <h2 className="text-2xl font-bold text-slate-900 mb-2">Thank You!</h2>
                         <p className="text-slate-600 mb-8">The candidate's profile has been verified successfully.</p>
-
                         <button
                             onClick={() => {
                                 setShowDonePopup(false);
@@ -857,6 +905,125 @@ export default function CandidateDetail() {
                     </div>
                 </div>
             </div>
-        </div >
+
+            {/* Email Settings Modal */}
+            {showSettingsModal && (
+                <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
+                    <div className="absolute inset-0 bg-slate-900/60 backdrop-blur-md" onClick={() => setShowSettingsModal(false)}></div>
+                    <div className="bg-white rounded-3xl shadow-2xl w-full max-w-md relative z-10 animate-in zoom-in-95 duration-200 overflow-hidden">
+                        <div className="bg-gradient-to-r from-blue-600 to-indigo-700 p-6 text-white">
+                            <div className="flex justify-between items-center">
+                                <div className="flex items-center gap-3">
+                                    <div className="bg-white/20 p-2 rounded-xl">
+                                        <Mail className="w-6 h-6" />
+                                    </div>
+                                    <h2 className="text-xl font-bold">Email Configuration</h2>
+                                </div>
+                                <button onClick={() => setShowSettingsModal(false)} className="hover:bg-white/10 p-1 rounded-lg transition-colors">
+                                    <XCircle className="w-6 h-6 text-white" />
+                                </button>
+                            </div>
+                        </div>
+
+                        <div className="p-8">
+                            <form className="space-y-6">
+                                <div>
+                                    <label className="block text-xs font-bold text-slate-500 uppercase tracking-widest mb-3">Email Provider</label>
+                                    <div className="flex gap-4">
+                                        <button
+                                            type="button"
+                                            onClick={() => setEmailSettings(prev => ({ ...prev, service: 'gmail' }))}
+                                            className={`flex-1 py-3 px-4 rounded-2xl border-2 transition-all flex items-center justify-center gap-2 font-bold text-sm ${emailSettings.service === 'gmail' ? 'border-blue-600 bg-blue-50 text-blue-700 shadow-md shadow-blue-100' : 'border-slate-100 text-slate-400 hover:bg-slate-50'}`}
+                                        >
+                                            <div className={`w-4 h-4 rounded-full border-2 flex items-center justify-center ${emailSettings.service === 'gmail' ? 'border-blue-600 bg-blue-600' : 'border-slate-300'}`}>
+                                                {emailSettings.service === 'gmail' && <div className="w-1.5 h-1.5 bg-white rounded-full"></div>}
+                                            </div>
+                                            Gmail
+                                        </button>
+                                        <button
+                                            type="button"
+                                            onClick={() => setEmailSettings(prev => ({ ...prev, service: 'brevo' }))}
+                                            className={`flex-1 py-3 px-4 rounded-2xl border-2 transition-all flex items-center justify-center gap-2 font-bold text-sm ${emailSettings.service === 'brevo' ? 'border-indigo-600 bg-indigo-50 text-indigo-700 shadow-md shadow-indigo-100' : 'border-slate-100 text-slate-400 hover:bg-slate-50'}`}
+                                        >
+                                            <div className={`w-4 h-4 rounded-full border-2 flex items-center justify-center ${emailSettings.service === 'brevo' ? 'border-indigo-600 bg-indigo-600' : 'border-slate-300'}`}>
+                                                {emailSettings.service === 'brevo' && <div className="w-1.5 h-1.5 bg-white rounded-full"></div>}
+                                            </div>
+                                            Brevo
+                                        </button>
+                                    </div>
+                                </div>
+
+                                <div>
+                                    <label className="block text-xs font-bold text-slate-500 uppercase tracking-widest mb-2">
+                                        {emailSettings.service === 'brevo' ? 'Brevo Login Email / User' : 'Gmail Address'}
+                                    </label>
+                                    <div className="relative">
+                                        <Mail className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
+                                        <input
+                                            type="email"
+                                            value={emailSettings.email}
+                                            onChange={(e) => setEmailSettings(prev => ({ ...prev, email: e.target.value }))}
+                                            className="w-full pl-10 pr-4 py-3 bg-slate-50 border border-slate-200 rounded-2xl text-sm focus:ring-2 focus:ring-blue-500 outline-none transition-all"
+                                            placeholder={emailSettings.service === 'brevo' ? 'brevo-user@example.com' : 'hr@example.com'}
+                                        />
+                                    </div>
+                                </div>
+
+                                <div>
+                                    <label className="block text-xs font-bold text-slate-500 uppercase tracking-widest mb-2">
+                                        {emailSettings.service === 'brevo' ? 'SMTP Key (v3)' : 'Gmail App Password (16 Letters)'}
+                                    </label>
+                                    <div className="relative">
+                                        <Key className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
+                                        <input
+                                            type="password"
+                                            value={emailSettings.password}
+                                            onChange={(e) => setEmailSettings(prev => ({ ...prev, password: e.target.value }))}
+                                            className="w-full pl-10 pr-4 py-3 bg-slate-50 border border-slate-200 rounded-2xl text-sm focus:ring-2 focus:ring-blue-500 outline-none transition-all font-mono"
+                                            placeholder={emailSettings.service === 'brevo' ? 'xkeysib-...' : 'xxxx xxxx xxxx xxxx'}
+                                        />
+                                    </div>
+                                    <div className="mt-2 p-3 bg-slate-50 rounded-xl border border-slate-100">
+                                        <p className="text-[10px] text-slate-600 leading-relaxed">
+                                            {emailSettings.service === 'brevo' ? (
+                                                <><b>Note:</b> Get your SMTP Key from <b>Brevo &gt; SMTP & API &gt; SMTP</b>.</>
+                                            ) : (
+                                                <><b>Note:</b> Use a 16-digit Google <b>"App Password"</b>, not your login password.</>
+                                            )}
+                                        </p>
+                                    </div>
+                                </div>
+
+                                {testResult && (
+                                    <div className={`p-4 rounded-2xl border flex gap-3 items-center ${testResult.success ? 'bg-emerald-50 border-emerald-100 text-emerald-700' : 'bg-rose-50 border-rose-100 text-rose-700'}`}>
+                                        {testResult.success ? <CheckCircle className="w-5 h-5 shrink-0" /> : <XCircle className="w-5 h-5 shrink-0" />}
+                                        <span className="text-xs font-medium">{testResult.message}</span>
+                                    </div>
+                                )}
+
+                                <div className="grid grid-cols-2 gap-4 pt-4">
+                                    <button
+                                        type="button"
+                                        onClick={handleTestConnection}
+                                        disabled={testingConnection || !emailSettings.email || !emailSettings.password}
+                                        className="py-3 px-4 border-2 border-slate-100 rounded-2xl text-slate-600 hover:bg-slate-50 font-bold text-sm transition-all flex items-center justify-center gap-2 disabled:opacity-50"
+                                    >
+                                        {testingConnection ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Test Connection'}
+                                    </button>
+                                    <button
+                                        type="button"
+                                        onClick={handleSaveSettings}
+                                        disabled={savingSettings || !emailSettings.email || !emailSettings.password}
+                                        className="py-3 px-4 bg-slate-900 text-white rounded-2xl hover:bg-slate-800 font-bold text-sm shadow-xl shadow-slate-200 transition-all flex items-center justify-center gap-2 disabled:opacity-50"
+                                    >
+                                        {savingSettings ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Save Settings'}
+                                    </button>
+                                </div>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+            )}
+        </div>
     );
 }

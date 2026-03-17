@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { useAuth } from '../../context/AuthContext';
+import { useAuth, API_BASE } from '../../context/AuthContext';
 import Navbar from '../../components/Navbar';
 import StatusTracker from '../../components/StatusTracker';
 import { FileText, Upload, CheckSquare, Clock } from 'lucide-react';
@@ -8,8 +8,6 @@ import { generateOfferLetter } from '../../utils/offerLetterGenerator';
 
 export default function CandidateDashboard() {
     const { user, loginCandidate } = useAuth();
-
-    const API_BASE = import.meta.env.VITE_API_URL || '';
 
     // Calculate current step based on completion
     const getStep = () => {
@@ -228,7 +226,35 @@ export default function CandidateDashboard() {
                                         : "Once you complete all onboarding steps, you can request your offer letter."}
                             </p>
                         </div>
-                        <div>
+                        <div className="flex gap-4">
+                            {/* Reset Button (Demo specific) */}
+                            <button
+                                onClick={async () => {
+                                    if (window.confirm('Reset all your onboarding progress? This will clear your documents and details for demo purposes.')) {
+                                        try {
+                                            const token = localStorage.getItem('onboarding_token');
+                                            const res = await fetch(`${API_BASE}/api/admin/reset-candidate/${user._id || user.id}`, {
+                                                method: 'POST',
+                                                headers: { 'Authorization': `Bearer ${token}` }
+                                            });
+                                            if (res.ok) {
+                                                // Clear local storage demo flags
+                                                localStorage.removeItem('onboarding_personal_details');
+                                                localStorage.removeItem('onboarding_bank_details');
+                                                localStorage.removeItem('candidate_docs');
+                                                alert("Progress Reset Successfully!");
+                                                window.location.reload();
+                                            }
+                                        } catch (err) {
+                                            alert("Error resetting progress");
+                                        }
+                                    }
+                                }}
+                                className="px-6 py-2 bg-slate-100 text-slate-600 rounded-lg font-bold hover:bg-slate-200 transition-all"
+                            >
+                                Reset Progress
+                            </button>
+
                             {user?.offerLetterStatus === 'Generated' ? (
                                 <button
                                     onClick={() => generateOfferLetter(user)}

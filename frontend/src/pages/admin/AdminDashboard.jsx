@@ -1,8 +1,8 @@
 import { useNavigate } from 'react-router-dom';
 import { useState, useEffect, useRef } from 'react';
-import { useAuth } from '../../context/AuthContext';
+import { useAuth, API_BASE } from '../../context/AuthContext';
 import Navbar from '../../components/Navbar';
-import { Users, Search, Filter, MoreVertical, Eye, FileText, CheckCircle, XCircle, Clock, MessageSquare, Send, X, Trash2 } from 'lucide-react';
+import { Users, Search, Filter, MoreVertical, Eye, FileText, CheckCircle, XCircle, Clock, MessageSquare, Send, X, Trash2, Settings, Key, Mail, Loader2, AlertCircle } from 'lucide-react';
 import JSZip from 'jszip';
 import { saveAs } from 'file-saver';
 
@@ -15,8 +15,13 @@ export default function AdminDashboard() {
     const [adminInput, setAdminInput] = useState('');
     const [retentionWarnings, setRetentionWarnings] = useState([]);
     const chatEndRef = useRef(null);
+    const [showSettingsModal, setShowSettingsModal] = useState(false);
+    const [emailSettings, setEmailSettings] = useState({ email: '', password: '' });
+    const [testingConnection, setTestingConnection] = useState(false);
+    const [savingSettings, setSavingSettings] = useState(false);
+    const [testResult, setTestResult] = useState(null);
+    const [mailerStatus, setMailerStatus] = useState({ configured: false, user: '' });
 
-    const API_BASE = import.meta.env.VITE_API_URL || '';
 
     useEffect(() => {
         const fetchCandidates = async () => {
@@ -53,13 +58,39 @@ export default function AdminDashboard() {
                     }
                 }
             } catch (error) {
-                console.error('Retention check failed:', error);
+                // Silently ignore retention check errors during polling
             }
+        };
+
+        const fetchMailerStatus = async () => {
+            try {
+                const token = localStorage.getItem('onboarding_token');
+                const response = await fetch(`${API_BASE}/api/system-info`, {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+                if (response.ok) {
+                    const data = await response.json();
+                    if (data.mailerConfigured !== undefined) {
+                        setMailerStatus({ configured: data.mailerConfigured, user: data.mailerUser });
+                        if (data.mailerUser && data.mailerUser !== 'Not Configured') {
+                            setEmailSettings(prev => ({ ...prev, email: data.mailerUser }));
+                        }
+                    }
+                }
+            } catch (err) { console.log("System info fetch failed"); }
         };
 
         fetchCandidates();
         checkRetention();
-        // Optional: Polling or WebSocket for real-time updates could go here
+        fetchMailerStatus();
+
+        // POLL FOR UPDATES: Refresh candidate list and retention every 5 seconds for real-time notifications
+        const pollInterval = setInterval(() => {
+            fetchCandidates();
+            checkRetention();
+        }, 5000);
+
+        return () => clearInterval(pollInterval);
     }, []);
 
     // ... (chat polling effect omitted, see next replace block if needed)
@@ -89,6 +120,29 @@ export default function AdminDashboard() {
             } catch (error) {
                 console.error('Error deleting candidate:', error);
                 alert('Error deleting candidate');
+            }
+        }
+    };
+
+    const handleResetCandidate = async (candidateId) => {
+        if (window.confirm('Reset this candidate\'s onboarding? Documents will be cleared and status will return to "Pending".')) {
+            try {
+                const token = localStorage.getItem('onboarding_token');
+                const response = await fetch(`${API_BASE}/api/admin/reset-candidate/${candidateId}`, {
+                    method: 'POST',
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+
+                if (response.ok) {
+                    alert('Candidate reset successfully!');
+                    // Refresh localized data or list
+                    window.location.reload();
+                } else {
+                    alert('Failed to reset candidate');
+                }
+            } catch (error) {
+                console.error('Reset Error:', error);
+                alert('Error resetting candidate');
             }
         }
     };
@@ -174,6 +228,57 @@ export default function AdminDashboard() {
         localStorage.setItem(`chat_history_${selectedChatCandidate.email}`, JSON.stringify(updatedHistory));
     };
 
+    const handleTestConnection = async (e) => {
+        e.preventDefault();
+        setTestingConnection(true);
+        setTestResult(null);
+        try {
+            const token = localStorage.getItem('onboarding_token');
+            const response = await fetch(`${API_BASE}/api/admin/test-email-connection`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${token}`
+                },
+                body: JSON.stringify(emailSettings)
+            });
+            const data = await response.json();
+            setTestResult({ success: response.ok, message: data.message });
+        } catch (error) {
+            setTestResult({ success: false, message: 'Connection failed. Check your network.' });
+        } finally {
+            setTestingConnection(false);
+        }
+    };
+
+    const handleSaveSettings = async (e) => {
+        e.preventDefault();
+        setSavingSettings(true);
+        try {
+            const token = localStorage.getItem('onboarding_token');
+            const response = await fetch(`${API_BASE}/api/admin/update-email-setup`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${token}`
+                },
+                body: JSON.stringify(emailSettings)
+            });
+            const data = await response.json();
+            if (response.ok) {
+                alert('✅ Settings saved successfully!');
+                setShowSettingsModal(false);
+                setMailerStatus({ configured: true, user: emailSettings.email });
+            } else {
+                alert(`❌ Failed to save: ${data.message}`);
+            }
+        } catch (error) {
+            alert('❌ System Error: Unable to save settings.');
+        } finally {
+            setSavingSettings(false);
+        }
+    };
+
     // Removed duplicate handleDeleteCandidate from here
 
     const handleDownloadAll = async (candidate) => {
@@ -226,6 +331,20 @@ export default function AdminDashboard() {
                     <div>
                         <h1 className="text-2xl font-bold text-slate-900">Admin Dashboard</h1>
                         <p className="mt-1 text-slate-500">Manage ongoing onboardings and verify documents.</p>
+                    </div>
+                    <div className="mt-4 md:mt-0 flex items-center gap-3">
+                        {!mailerStatus.configured && (
+                            <div className="flex items-center gap-1.5 px-3 py-1.5 bg-rose-50 text-rose-600 rounded-lg border border-rose-100 animate-pulse">
+                                <AlertCircle className="w-4 h-4" />
+                                <span className="text-[10px] font-bold uppercase">Mailer Not Configured</span>
+                            </div>
+                        )}
+                        <button
+                            onClick={() => setShowSettingsModal(true)}
+                            className="inline-flex items-center px-4 py-2 bg-white border border-slate-200 text-slate-700 hover:bg-slate-50 font-bold text-sm rounded-xl shadow-sm transition-all"
+                        >
+                            <Settings className="w-4 h-4 mr-2" /> Settings
+                        </button>
                     </div>
                 </div>
 
@@ -339,6 +458,13 @@ export default function AdminDashboard() {
                                                 <Trash2 className="w-4 h-4 mr-1" /> Remove
                                             </button>
                                             <button
+                                                onClick={() => handleResetCandidate(candidate._id || candidate.id)}
+                                                className="text-amber-600 hover:text-amber-900 bg-amber-50 hover:bg-amber-100 px-3 py-1 rounded-md mr-2 transition-colors inline-flex items-center"
+                                                title="Reset Onboarding"
+                                            >
+                                                <Clock className="w-4 h-4 mr-1" /> Reset
+                                            </button>
+                                            <button
                                                 onClick={() => navigate(`/admin/candidate/${candidate._id || candidate.id}`)}
                                                 className="text-slate-600 hover:text-slate-900 bg-slate-100 hover:bg-slate-200 px-3 py-1 rounded-md transition-colors inline-flex items-center"
                                             >
@@ -434,6 +560,94 @@ export default function AdminDashboard() {
                                 <Send className="w-5 h-5" />
                             </button>
                         </form>
+                    </div>
+                </div>
+            )}
+
+            {/* Email Settings Modal */}
+            {showSettingsModal && (
+                <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
+                    <div className="absolute inset-0 bg-slate-900/60 backdrop-blur-md" onClick={() => setShowSettingsModal(false)}></div>
+                    <div className="bg-white rounded-3xl shadow-2xl w-full max-w-md relative z-10 animate-in zoom-in-95 duration-200 overflow-hidden">
+                        <div className="bg-gradient-to-r from-blue-600 to-indigo-700 p-6 text-white">
+                            <div className="flex justify-between items-center">
+                                <div className="flex items-center gap-3">
+                                    <div className="bg-white/20 p-2 rounded-xl">
+                                        <Mail className="w-6 h-6" />
+                                    </div>
+                                    <h2 className="text-xl font-bold">Email Configuration</h2>
+                                </div>
+                                <button onClick={() => setShowSettingsModal(false)} className="hover:bg-white/10 p-1 rounded-lg transition-colors">
+                                    <X className="w-6 h-6" />
+                                </button>
+                            </div>
+                            <p className="text-blue-100 text-xs mt-4 leading-relaxed">
+                                Used to send automated offer letters with PDF attachments to candidates.
+                            </p>
+                        </div>
+
+                        <div className="p-8">
+                            <form className="space-y-6">
+                                <div>
+                                    <label className="block text-xs font-bold text-slate-500 uppercase tracking-widest mb-2">Gmail Address</label>
+                                    <div className="relative">
+                                        <Mail className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
+                                        <input
+                                            type="email"
+                                            value={emailSettings.email}
+                                            onChange={(e) => setEmailSettings(prev => ({ ...prev, email: e.target.value }))}
+                                            className="w-full pl-10 pr-4 py-3 bg-slate-50 border border-slate-200 rounded-2xl text-sm focus:ring-2 focus:ring-blue-500 outline-none transition-all"
+                                            placeholder="hr@example.com"
+                                        />
+                                    </div>
+                                </div>
+
+                                <div>
+                                    <label className="block text-xs font-bold text-slate-500 uppercase tracking-widest mb-2">Gmail App Password (16 Letters)</label>
+                                    <div className="relative">
+                                        <Key className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
+                                        <input
+                                            type="password"
+                                            value={emailSettings.password}
+                                            onChange={(e) => setEmailSettings(prev => ({ ...prev, password: e.target.value }))}
+                                            className="w-full pl-10 pr-4 py-3 bg-slate-50 border border-slate-200 rounded-2xl text-sm focus:ring-2 focus:ring-blue-500 outline-none transition-all font-mono"
+                                            placeholder="xxxx xxxx xxxx xxxx"
+                                        />
+                                    </div>
+                                    <div className="mt-2 p-3 bg-amber-50 rounded-xl border border-amber-100">
+                                        <p className="text-[10px] text-amber-700 leading-relaxed">
+                                            <b>Note:</b> Use a 16-digit Google "App Password", not your login password. Ensure 2-Step Verification is ON in your account.
+                                        </p>
+                                    </div>
+                                </div>
+
+                                {testResult && (
+                                    <div className={`p-4 rounded-2xl border flex gap-3 items-center ${testResult.success ? 'bg-emerald-50 border-emerald-100 text-emerald-700' : 'bg-rose-50 border-rose-100 text-rose-700'}`}>
+                                        {testResult.success ? <CheckCircle className="w-5 h-5 shrink-0" /> : <XCircle className="w-5 h-5 shrink-0" />}
+                                        <span className="text-xs font-medium">{testResult.message}</span>
+                                    </div>
+                                )}
+
+                                <div className="grid grid-cols-2 gap-4 pt-4">
+                                    <button
+                                        type="button"
+                                        onClick={handleTestConnection}
+                                        disabled={testingConnection || !emailSettings.email || !emailSettings.password}
+                                        className="py-3 px-4 border-2 border-slate-100 rounded-2xl text-slate-600 hover:bg-slate-50 font-bold text-sm transition-all flex items-center justify-center gap-2 disabled:opacity-50"
+                                    >
+                                        {testingConnection ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Test Connection'}
+                                    </button>
+                                    <button
+                                        type="button"
+                                        onClick={handleSaveSettings}
+                                        disabled={savingSettings || !emailSettings.email || !emailSettings.password}
+                                        className="py-3 px-4 bg-slate-900 text-white rounded-2xl hover:bg-slate-800 font-bold text-sm shadow-xl shadow-slate-200 transition-all flex items-center justify-center gap-2 disabled:opacity-50"
+                                    >
+                                        {savingSettings ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Save Settings'}
+                                    </button>
+                                </div>
+                            </form>
+                        </div>
                     </div>
                 </div>
             )}

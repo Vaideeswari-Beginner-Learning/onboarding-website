@@ -14,8 +14,8 @@ const getApiBase = () => {
             return `${protocol}//${hostname}:5000`;
         }
     }
-    // In production (Unified Render Deployment), use relative paths
-    return ''; 
+    // In production, fallback to Render URL if not serving from same origin
+    return 'https://onboarding-website-1.onrender.com'; 
 };
 export const ACTUAL_API_BASE = getApiBase();
 
