@@ -2,7 +2,7 @@ import React, { createContext, useContext, useState, useEffect } from 'react';
 
 const AuthContext = createContext(null);
 
-export const FRONTEND_VERSION = '2.0.2-FINAL';
+export const FRONTEND_VERSION = '2.0.3-RELEASE';
 export const API_BASE = import.meta.env.VITE_API_URL || '';
 // Fallback logic for local development if VITE_API_URL is missing
 const getApiBase = () => {
@@ -80,6 +80,7 @@ export const AuthProvider = ({ children }) => {
             return { success: true };
         } catch (error) {
             console.error(error);
+            alert(`LOGIN FAILED\nURL: ${url}\nError: ${error.message}`);
             return { success: false, message: error.message };
         }
     };
@@ -120,6 +121,7 @@ export const AuthProvider = ({ children }) => {
             return { success: true };
         } catch (error) {
             console.error('Candidate Login Error:', error);
+            alert(`CANDIDATE LOGIN FAILED\nURL: ${url}\nError: ${error.message}`);
             return { success: false, message: error.message };
         }
     };
@@ -222,7 +224,7 @@ export const AuthProvider = ({ children }) => {
             return true;
         } catch (error) {
             console.error(error);
-            alert(error.message);
+            alert(`REGISTRATION FAILED\nURL: ${url}\nError: ${error.message}`);
             return false;
         }
     };
