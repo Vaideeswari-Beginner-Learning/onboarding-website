@@ -25,8 +25,12 @@ const authenticateToken = (req, res, next) => {
 
     if (!token) return res.status(401).json({ message: 'Access Denied: No Token Provided' });
 
+    console.log(`DEBUG: Verifying Token. Secret length: ${JWT_SECRET.length}`);
     jwt.verify(token, JWT_SECRET, (err, user) => {
-        if (err) return res.status(403).json({ message: 'Access Denied: Invalid or Expired Token' });
+        if (err) {
+            console.error('DEBUG: JWT Verification Failed:', err.message);
+            return res.status(403).json({ message: 'Access Denied: Invalid or Expired Token' });
+        }
         req.user = user;
         next();
     });
@@ -63,6 +67,8 @@ app.use((req, res, next) => {
 app.use(express.json({ limit: '10mb' }));
 app.use("/files", express.static(path.join(process.cwd(), "public")));
 
+// ----------------------------------------
+
 // Root Route
 app.get('/', (req, res) => {
     res.json({
@@ -74,10 +80,12 @@ app.get('/', (req, res) => {
 
 // Health Check Endpoint
 app.get('/api/health-check', (req, res) => {
+    const dbStatus = mongoose.connection.readyState === 1 ? 'Connected' : 'Disconnected';
     res.json({
         status: 'ok',
-        version: '1.4.0-FINAL',
-        message: 'CORS is open',
+        version: '1.4.1-STABLE',
+        database: dbStatus,
+        message: dbStatus === 'Connected' ? 'System fully operational' : 'Database connection pending/failed',
         timestamp: new Date().toISOString()
     });
 });
@@ -86,26 +94,32 @@ app.get('/api/health-check', (req, res) => {
 app.get('/api/system-info', (req, res) => {
     const interfaces = os.networkInterfaces();
     let localIp = 'localhost';
+    const host = req.get('host') || '';
 
-    for (const devName in interfaces) {
-        const iface = interfaces[devName];
-        for (let i = 0; i < iface.length; i++) {
-            const alias = iface[i];
-            if (alias.family === 'IPv4' && alias.address !== '127.0.0.1' && !alias.internal) {
-                localIp = alias.address;
-                break;
+    if (!host.includes('localhost') && !host.includes('127.0.0.1')) {
+        for (const devName in interfaces) {
+            const iface = interfaces[devName];
+            for (let i = 0; i < iface.length; i++) {
+                const alias = iface[i];
+                if (alias.family === 'IPv4' && alias.address !== '127.0.0.1' && !alias.internal) {
+                    localIp = alias.address;
+                    break;
+                }
             }
+            if (localIp !== 'localhost') break;
         }
     }
 
     const mailerUser = process.env.EMAIL_USER;
     const mailerPass = process.env.EMAIL_PASS;
+    const mailerService = process.env.EMAIL_SERVICE || 'gmail';
     const isMailerConfigured = mailerUser && mailerPass && !mailerUser.includes('your-') && !mailerPass.includes('paste-');
 
     res.json({
         suggestedUrl: `http://${localIp}:${PORT}`,
         mailerConfigured: !!isMailerConfigured,
-        mailerUser: isMailerConfigured ? mailerUser : 'Not Configured'
+        mailerUser: isMailerConfigured ? mailerUser : 'Not Configured',
+        mailerService
     });
 });
 
@@ -114,9 +128,17 @@ const mongoUri = process.env.MONGO_URI;
 if (!mongoUri) {
     console.error('CRITICAL WARNING: MONGO_URI is not defined!');
 } else {
-    mongoose.connect(mongoUri)
-        .then(() => console.log('MongoDB Connected'))
-        .catch(err => console.error('MongoDB Connection Error:', err));
+    mongoose.set('bufferCommands', false); // Disable buffering so errors are immediate
+    mongoose.connect(mongoUri, {
+        serverSelectionTimeoutMS: 5000, // Fail fast (5s) if cannot reach server
+    })
+        .then(() => console.log('✅ MongoDB Connected Successfully'))
+        .catch(err => {
+            console.error('❌ MongoDB Connection Error:', err.message);
+            if (err.message.includes('Authentication failed')) {
+                console.error('👉 TIP: Check your MONGO_URI username and password in .env');
+            }
+        });
 }
 
 // Middleware to log requests
@@ -139,6 +161,7 @@ app.post('/api/auth/login', (req, res) => {
         console.log(`Login attempt: '${email}'`);
 
         const isAdminUser = (email === 'info@forgeindiaconnect.com' && password === 'Forgeindia@09') ||
+            (email === 'info@gmail.com' && password === 'Forgeindia@09') ||
             (email === 'admin@gmail.com' && password === 'admin');
 
         if (isAdminUser) {
@@ -186,7 +209,7 @@ app.post('/api/auth/candidate/login', async (req, res) => {
             // Auto-register if not found
             candidate = new Candidate({
                 id: 'CAND-' + Math.random().toString(36).substr(2, 9),
-                name: email.split('@')[0], // Default name from email
+                name: name || email.split('@')[0], // Use provided name or default from email
                 email: email,
                 role: 'candidate',
                 status: 'Onboarding',
@@ -243,8 +266,12 @@ app.post('/api/auth/register', async (req, res) => {
         await newCandidate.save();
         res.json({ user: newCandidate });
     } catch (error) {
-        console.error('Registration Error:', error);
-        res.status(500).json({ message: 'Server error during registration' });
+        console.error('❌ REGISTRATION ERROR DETAILED:', error);
+        res.status(500).json({ 
+            message: 'Server error during registration', 
+            error: error.message,
+            stack: process.env.NODE_ENV === 'development' ? error.stack : undefined
+        });
     }
 });
 
@@ -410,6 +437,36 @@ app.delete('/api/candidates/:id', authenticateToken, isAdmin, async (req, res) =
     }
 });
 
+// Reset Candidate Onboarding (for Demo)
+app.post('/api/admin/reset-candidate/:id', authenticateToken, isAdmin, async (req, res) => {
+    try {
+        const candidate = await Candidate.findOne({
+            $or: [
+                { _id: mongoose.isValidObjectId(req.params.id) ? req.params.id : null },
+                { id: req.params.id }
+            ]
+        });
+
+        if (!candidate) {
+            return res.status(404).json({ message: 'Candidate not found' });
+        }
+
+        // Reset all fields
+        candidate.status = 'Onboarding';
+        candidate.documents = [];
+        candidate.offerLetterRequested = false;
+        candidate.offerLetterStatus = 'Pending';
+        candidate.offerDetails = {};
+        candidate.offerPdfBase64 = null;
+
+        await candidate.save();
+        res.json({ message: 'Candidate onboarding reset successfully', candidate });
+    } catch (error) {
+        console.error('Reset Candidate Error:', error);
+        res.status(500).json({ message: 'Server error resetting candidate' });
+    }
+});
+
 // Retention Policy Check (90 Days)
 app.get('/api/admin/check-retention', authenticateToken, isAdmin, async (req, res) => {
     try {
@@ -471,10 +528,11 @@ app.post('/api/admin/send-offer-email', authenticateToken, isAdmin, async (req, 
 
         const transporter = getTransporter();
         if (!transporter) {
+            const service = (process.env.EMAIL_SERVICE || 'gmail').toUpperCase();
             return res.status(400).json({
                 success: false,
                 error: 'CREDENTIALS_MISSING',
-                message: 'Gmail App Password is not configured in .env'
+                message: `Email Configuration Needed: Please update your ${service} credentials in .env`
             });
         }
 
@@ -486,6 +544,15 @@ app.post('/api/admin/send-offer-email', authenticateToken, isAdmin, async (req, 
         const companyName = offerDetails.companyName || 'Forge India Connect';
         const jobRole = offerDetails.jobRole || 'Employee';
         const joiningDate = offerDetails.joiningDate || 'TBD';
+
+        // 🔍 DETAILED LOGGING - To trace recipient address
+        console.log('=== EMAIL SEND DETAILS ===');
+        console.log(`📨 Sending TO: "${candidateEmail}"`);
+        console.log(`📝 customEmail from frontend: "${customEmail}"`);
+        console.log(`📝 candidate.email in DB: "${candidate.email}"`);
+        console.log(`📝 Service: ${process.env.EMAIL_SERVICE}`);
+        console.log(`📝 From: ${process.env.EMAIL_USER}`);
+        console.log('==========================');
 
         // SMART URL DETECTION: Use environment variable or detect from request
         let stableBaseUrl = process.env.BASE_URL || process.env.RENDER_EXTERNAL_URL;
@@ -515,51 +582,59 @@ app.post('/api/admin/send-offer-email', authenticateToken, isAdmin, async (req, 
             from: `Forge India Connect HR <${process.env.EMAIL_USER}>`,
             replyTo: process.env.EMAIL_USER,
             to: candidateEmail,
-            subject: `Official Offer Letter - ${companyName}`,
+            subject: `Official Offer Letter Attached - ${companyName}`,
             html: `
-                    <div style="font-family: 'Segoe UI', Arial, sans-serif; max-width: 600px; margin: 0 auto; background: #f8fafc; padding: 32px;">
-                        <div style="background: linear-gradient(135deg, #1e293b 0%, #334155 100%); color: white; padding: 32px; border-radius: 16px 16px 0 0; text-align: center;">
-                            <h1 style="margin: 0; font-size: 24px;">🎉 Congratulations, ${candidateName}!</h1>
-                            <p style="margin: 8px 0 0; opacity: 0.9; font-size: 14px;">You have received an offer from ${companyName}</p>
+                <div style="font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #f8fafc; padding: 40px; color: #1e293b;">
+                    <div style="max-width: 600px; margin: 0 auto; background-color: #ffffff; border-radius: 20px; overflow: hidden; box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);">
+                        <div style="background: linear-gradient(135deg, #2563eb 0%, #1e40af 100%); padding: 40px; text-align: center; color: #ffffff;">
+                            <h1 style="margin: 0; font-size: 32px; font-weight: 800; letter-spacing: -0.025em;">Congratulations!</h1>
+                            <p style="margin-top: 12px; font-size: 18px; opacity: 0.9;">Welcome to ${companyName}</p>
                         </div>
-                        <div style="background: white; padding: 32px; border-radius: 0 0 16px 16px; border: 1px solid #e2e8f0; border-top: none;">
-                            <p style="font-size: 16px; color: #334155; line-height: 1.6;">
-                                Dear <strong>${candidateName}</strong>,
-                            </p>
-                            <p style="font-size: 15px; color: #475569; line-height: 1.6;">
-                                We are delighted to offer you the position of <strong>${jobRole}</strong> at <strong>${companyName}</strong>. 
-                                We are excited to have you join our team!
+                        
+                        <div style="padding: 40px;">
+                            <p style="font-size: 16px; margin-bottom: 24px;">Dear <strong>${candidateName}</strong>,</p>
+                            
+                            <p style="font-size: 16px; line-height: 1.7; color: #475569; margin-bottom: 24px;">
+                                We are thrilled to officially offer you the position of <strong>${jobRole}</strong>. 
+                                Your skills and experience stood out, and we can't wait to have you join our mission at <strong>${companyName}</strong>.
                             </p>
                             
-                            <div style="text-align: center; margin: 30px 0;">
-                                <a href="${downloadUrl}" style="display: inline-block; padding: 14px 28px; background-color: #2563eb; color: white; text-decoration: none; border-radius: 12px; font-weight: bold; font-size: 16px; box-shadow: 0 4px 6px -1px rgba(37, 99, 235, 0.2);">
-                                    Download Offer Letter
-                                </a>
-                                <p style="font-size: 11px; color: #94a3b8; margin-top: 10px;">(Works on desktop and mobile)</p>
-                            </div>
-
-                            <div style="background: #f1f5f9; border-radius: 12px; padding: 20px; margin: 24px 0;">
-                                <table style="width: 100%; font-size: 14px; color: #475569;">
-                                    <tr><td style="padding: 6px 0; font-weight: 600;">Position:</td><td>${jobRole}</td></tr>
-                                    <tr><td style="padding: 6px 0; font-weight: 600;">Joining Date:</td><td>${joiningDate}</td></tr>
-                                    <tr><td style="padding: 6px 0; font-weight: 600;">Company:</td><td>${companyName}</td></tr>
+                            <div style="background-color: #f1f5f9; border-radius: 12px; padding: 24px; margin-bottom: 32px;">
+                                <h3 style="margin: 0 0 16px 0; font-size: 14px; text-transform: uppercase; letter-spacing: 0.05em; color: #64748b;">Offer Highlights</h3>
+                                <table style="width: 100%; border-collapse: collapse;">
+                                    <tr>
+                                        <td style="padding: 8px 0; color: #64748b; font-size: 14px;">Role:</td>
+                                        <td style="padding: 8px 0; color: #1e293b; font-weight: 600; text-align: right;">${jobRole}</td>
+                                    </tr>
+                                    <tr>
+                                        <td style="padding: 8px 0; color: #64748b; font-size: 14px;">Joining Date:</td>
+                                        <td style="padding: 8px 0; color: #1e293b; font-weight: 600; text-align: right;">${joiningDate}</td>
+                                    </tr>
                                 </table>
                             </div>
-                            <p style="font-size: 14px; color: #64748b; line-height: 1.6;">
-                                You can also view the attached PDF for full details. If you have any questions, feel free to reply to this email.
+
+                            <p style="font-size: 15px; color: #475569; padding: 16px; background-color: #eff6ff; border-radius: 8px; border-left: 4px solid #2563eb;">
+                                📄 <strong>Update:</strong> Your official Offer Letter is <strong>attached to this email as a PDF</strong> for your records.
                             </p>
-                            <hr style="border: none; border-top: 1px solid #e2e8f0; margin: 24px 0;" />
-                            <p style="font-size: 12px; color: #94a3b8; text-align: center;">
-                                This is an automated email from ${companyName} HR Department.<br/>
-                                Please do not share this email with unauthorized persons.
+
+                            <p style="font-size: 14px; color: #94a3b8; margin-top: 32px; text-align: center;">
+                                Alternative access: <a href="${downloadUrl}" style="color: #2563eb; text-decoration: underline;">View in Portal</a>
+                            </p>
+                        </div>
+
+                        <div style="background-color: #f8fafc; padding: 24px; text-align: center; border-top: 1px solid #e2e8f0;">
+                            <p style="margin: 0; font-size: 14px; color: #64748b;">
+                                Best Regards,<br/>
+                                <strong style="color: #1e293b;">HR Administration Team</strong>
                             </p>
                         </div>
                     </div>
-                `,
+                </div>
+            `,
             attachments: [
                 {
                     filename: `Offer_Letter_${candidateName.replace(/\s+/g, '_')}.pdf`,
-                    content: pdfBase64,
+                    content: pdfBase64.split('base64,')[1] || pdfBase64, // Strip data URI prefix if present
                     encoding: 'base64',
                     contentType: 'application/pdf'
                 }
@@ -569,8 +644,9 @@ app.post('/api/admin/send-offer-email', authenticateToken, isAdmin, async (req, 
         const info = await transporter.sendMail(mailOptions);
 
         // Show preview URL if using test account (Ethereal)
+        let previewUrl = null;
         try {
-            const previewUrl = nodemailer.getTestMessageUrl(info);
+            previewUrl = nodemailer.getTestMessageUrl(info);
             if (previewUrl) {
                 console.log(`📧 EMAIL PREVIEW URL: ${previewUrl}`);
             }
@@ -605,10 +681,15 @@ app.post('/api/admin/send-offer-email', authenticateToken, isAdmin, async (req, 
         // Handle common email auth errors specifically
         if (errorCode === 'EAUTH' || errorMessage.toLowerCase().includes('auth') || errorResponse.toLowerCase().includes('auth')) {
             resetTransporter(); // CRITICAL: Reset cached transporter so it reloads .env
+            const service = (process.env.EMAIL_SERVICE || 'gmail').toUpperCase();
+            const providerGuide = service === 'BREVO'
+                ? 'Check your Brevo SMTP Key.'
+                : 'Confirm your 16-digit Gmail App Password (no spaces).';
+
             return res.status(401).json({
                 success: false,
                 error: 'AUTH_FAILED',
-                message: 'Gmail authentication failed. Please confirm your 16-digit App Password in .env and ensure it has NO spaces.',
+                message: `${service} Authentication Failed: ${providerGuide}`,
                 detail: errorResponse || errorMessage
             });
         }
@@ -704,19 +785,21 @@ app.get('/api/public/offer-pdf/:id', async (req, res) => {
 
 // Test Connection Endpoint
 app.post('/api/admin/test-email-connection', authenticateToken, isAdmin, async (req, res) => {
-    const { email, password } = req.body;
+    const { email, password, service } = req.body;
     try {
         if (!email || !password) {
             return res.status(400).json({ success: false, message: 'Email and Password are required' });
         }
 
-        const testTransporter = nodemailer.createTransport({
-            service: 'gmail',
-            auth: { user: email, pass: password }
-        });
+        const emailService = (service || 'gmail').toLowerCase();
+        const config = emailService === 'brevo'
+            ? { host: 'smtp-relay.brevo.com', port: 587, auth: { user: email, pass: password } }
+            : { service: 'gmail', auth: { user: email, pass: password } };
+
+        const testTransporter = nodemailer.createTransport(config);
 
         await testTransporter.verify();
-        res.json({ success: true, message: 'Connection Successful! Your Gmail is ready to send PDFs.' });
+        res.json({ success: true, message: `Connection Successful! Your ${emailService.toUpperCase()} is ready.` });
     } catch (error) {
         console.error('Test Connection Error:', error);
         res.status(400).json({
@@ -728,11 +811,13 @@ app.post('/api/admin/test-email-connection', authenticateToken, isAdmin, async (
 });
 
 app.post('/api/admin/update-email-setup', authenticateToken, isAdmin, async (req, res) => {
-    const { email, password } = req.body;
+    const { email, password, service } = req.body;
     try {
         if (!email || !password) {
             return res.status(400).json({ message: 'Email and Password are required' });
         }
+
+        const emailService = (service || 'gmail').toLowerCase();
 
         // Read existing .env
         let envContent = fs.readFileSync('.env', 'utf8');
@@ -742,22 +827,25 @@ app.post('/api/admin/update-email-setup', authenticateToken, isAdmin, async (req
         const updatedLines = lines.map(line => {
             if (line.startsWith('EMAIL_USER=')) return `EMAIL_USER=${email}`;
             if (line.startsWith('EMAIL_PASS=')) return `EMAIL_PASS=${password}`;
+            if (line.startsWith('EMAIL_SERVICE=')) return `EMAIL_SERVICE=${emailService}`;
             return line;
         });
 
         // If lines were missing, add them
         if (!updatedLines.some(l => l.startsWith('EMAIL_USER='))) updatedLines.push(`EMAIL_USER=${email}`);
         if (!updatedLines.some(l => l.startsWith('EMAIL_PASS='))) updatedLines.push(`EMAIL_PASS=${password}`);
+        if (!updatedLines.some(l => l.startsWith('EMAIL_SERVICE='))) updatedLines.push(`EMAIL_SERVICE=${emailService}`);
 
         fs.writeFileSync('.env', updatedLines.join('\n'));
 
         // Refresh process.env immediately
         process.env.EMAIL_USER = email;
         process.env.EMAIL_PASS = password;
+        process.env.EMAIL_SERVICE = emailService;
 
         // FORCE MAIL UTILITY RESET
         resetTransporter();
-        console.log(`✅ .env updated. Mailer utility reset. New Auth: ${email}`);
+        console.log(`✅ .env updated. Mailer utility reset. New Auth: ${email} (${emailService})`);
         res.json({ success: true, message: 'Settings saved and mailer reset!' });
     } catch (error) {
         console.error('Update Setup Error:', error);
@@ -778,6 +866,36 @@ app.get('/api/admin/conversations', authenticateToken, isAdmin, async (req, res)
     } catch (error) {
         console.error('Fetch Conversations Error:', error);
         res.status(500).json({ message: 'Error fetching conversations' });
+    }
+});
+
+// Fallback for unmatched API routes
+app.all('/api/*', (req, res) => {
+    console.log(`404 - API Route Not Found: ${req.method} ${req.path}`);
+    res.status(404).json({
+        message: `API endpoint not found: ${req.method} ${req.path}`,
+        status: 'error'
+    });
+});
+
+// --- Serve Frontend Production Build ---
+const __dirname = path.resolve();
+const distPath = path.join(__dirname, '..', 'frontend', 'dist');
+
+if (fs.existsSync(distPath)) {
+    console.log(`Serving frontend from: ${distPath}`);
+    app.use(express.static(distPath));
+} else {
+    console.warn(`Frontend dist folder not found at: ${distPath}. Build it using 'npm run build' in the frontend folder.`);
+}
+
+// SPA Catch-all (must be after all API routes and static files)
+app.get('*', (req, res) => {
+    const indexFile = path.join(distPath, 'index.html');
+    if (fs.existsSync(indexFile)) {
+        res.sendFile(indexFile);
+    } else {
+        res.status(404).send('Not found');
     }
 });
 

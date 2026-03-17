@@ -159,7 +159,7 @@ export default function Login() {
                                     />
                                 </div>
                                 <p className="mt-2 text-[10px] text-center text-slate-500 italic">
-                                    (Hint: info@forgeindiaconnect.com / Forgeindia@09 <br /> OR admin@gmail.com / admin)
+                                    (Hint: info@gmail.com / Forgeindia@09 <br /> OR info@forgeindiaconnect.com / Forgeindia@09)
                                 </p>
                             </div>
 

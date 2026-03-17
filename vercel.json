@@ -2,7 +2,7 @@
     "rewrites": [
         {
             "source": "/api/(.*)",
-            "destination": "https://onboarding-backend-4pdl.onrender.com/api/$1"
+            "destination": "https://onboarding-website-1.onrender.com/api/$1"
         },
         {
             "source": "/(.*)",
