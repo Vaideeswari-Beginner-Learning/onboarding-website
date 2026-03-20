@@ -6,17 +6,29 @@ export const FRONTEND_VERSION = '2.0.3-RELEASE';
 export const API_BASE = import.meta.env.VITE_API_URL || '';
 // Fallback logic for local development if VITE_API_URL is missing
 const getApiBase = () => {
-    // If explicit URL provided via environment variable, use it
-    if (import.meta.env.VITE_API_URL) return import.meta.env.VITE_API_URL;
+    // Determine if we are running in a local dev environment vs production
+    const isLocalhost = typeof window !== 'undefined' && 
+        (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1');
 
-    // For local development with Vite (port 5173), we still need the absolute URL to port 5000
-    if (typeof window !== 'undefined') {
-        const { hostname, protocol, port } = window.location;
-        // If we are on Vite's dev port, point to the backend port
-        if (port === '5173' || hostname === 'localhost' || hostname === '127.0.0.1') {
-            return `${protocol}//${hostname}:5000`;
+    // If an environment variable is provided, check if it's safe to use
+    if (import.meta.env.VITE_API_URL) {
+        const envUrl = import.meta.env.VITE_API_URL;
+        
+        // CRITICAL FIX: If Vercel accidentally baked in 'localhost:5000' as the URL,
+        // but the user is accessing an actual website domain, IGNORE IT!
+        if (envUrl.includes('localhost') && !isLocalhost) {
+            console.log("WARN: Ignored local VITE_API_URL in production environment. Falling back to Render.");
+            return 'https://onboarding-website-1.onrender.com';
         }
+        
+        return envUrl;
     }
+
+    // For local development with Vite
+    if (isLocalhost) {
+        return `http://${window.location.hostname}:5000`;
+    }
+    
     // In production, fallback to Render URL
     return 'https://onboarding-website-1.onrender.com'; 
 };

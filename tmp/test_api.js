@@ -1,20 +1,38 @@
-import fetch from 'node-fetch';
+const https = require('https');
 
-async function testLogin() {
-    const url = 'https://onboarding-website-1.onrender.com/api/auth/login';
-    console.log(`Testing POST ${url}...`);
-    try {
-        const response = await fetch(url, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ email: 'test@test.com', password: 'test' })
-        });
-        console.log(`Status: ${response.status} ${response.statusText}`);
-        const text = await response.text();
-        console.log(`Body: ${text.substring(0, 200)}`);
-    } catch (error) {
-        console.error(`Error: ${error.message}`);
-    }
-}
+const data = JSON.stringify({
+  email: 'info@forgeindiaconnect.com',
+  password: 'Forgeindia@09'
+});
 
-testLogin();
+const options = {
+  hostname: 'onboarding-website-1.onrender.com',
+  path: '/api/auth/login',
+  method: 'POST',
+  headers: {
+    'Content-Type': 'application/json',
+    'Content-Length': data.length
+  }
+};
+
+const req = https.request(options, (res) => {
+  let responseData = '';
+
+  console.log('Status Code:', res.statusCode);
+  console.log('Headers:', res.headers);
+
+  res.on('data', (chunk) => {
+    responseData += chunk;
+  });
+
+  res.on('end', () => {
+    console.log('Response:', responseData.substring(0, 500));
+  });
+});
+
+req.on('error', (error) => {
+  console.error('Error:', error);
+});
+
+req.write(data);
+req.end();
