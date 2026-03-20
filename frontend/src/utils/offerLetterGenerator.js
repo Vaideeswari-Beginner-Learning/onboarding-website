@@ -392,20 +392,10 @@ export const generateOfferLetter = async (candidate) => {
 
 
     // ================= ANNEXURE B: TERMS =================
-    // Compact Layout Check: If enough space remains on this page, continue here.
-    // We need approx 40 units for Header + 1st Term.
-    yPos += 15;
-
-    if (yPos > pageHeight - 50) {
-        doc.addPage();
-        drawPageLayout(false);
-        yPos = 30;
-    } else {
-        // Draw Separator if on same page
-        doc.setDrawColor(200);
-        doc.setLineWidth(0.5);
-        doc.line(margin, yPos - 10, pageWidth - margin, yPos - 10);
-    }
+    // Always start Annexure B on a new page for professional layout
+    doc.addPage();
+    drawPageLayout(false);
+    yPos = 30;
 
     // Annexure Header
     doc.setFont("helvetica", "bold");
@@ -468,7 +458,10 @@ export const generateOfferLetter = async (candidate) => {
     doc.setFont("helvetica", "normal");
     doc.setFontSize(9);
     doc.text("Authorized Signatory", margin, yPos + 4);
-    doc.text(adminName, margin, yPos + 10);
+    doc.setFont("helvetica", "bold");
+    doc.text("Sandeep.V", margin, yPos + 12);
+    doc.setFont("helvetica", "normal");
+    doc.text(adminName, margin, yPos + 16);
 
     // Candidate
     doc.setFont("helvetica", "bold");
@@ -733,9 +726,9 @@ export const generateOfferLetterBase64 = async (candidate) => {
     doc.text("* Note: Income Tax deductions will be applicable based on the tax regime selected.", margin, yPos);
 
     // ANNEXURE B
-    yPos += 15;
-    if (yPos > pageHeight - 50) { doc.addPage(); drawPageLayout(false); yPos = 30; }
-    else { doc.setDrawColor(200); doc.setLineWidth(0.5); doc.line(margin, yPos - 10, pageWidth - margin, yPos - 10); }
+    doc.addPage();
+    drawPageLayout(false);
+    yPos = 30;
     doc.setFont("helvetica", "bold"); doc.setFontSize(14); doc.setTextColor(...primaryColor);
     doc.text("ANNEXURE B : TERMS OF EMPLOYMENT", margin, yPos);
     doc.setDrawColor(...accentColor); doc.setLineWidth(1); doc.line(margin, yPos + 3, pageWidth - margin, yPos + 3);
@@ -772,7 +765,10 @@ export const generateOfferLetterBase64 = async (candidate) => {
     doc.text(`FORGE INDIA CONNECT PVT.LTD`, margin, yPos);
     doc.setFont("helvetica", "normal"); doc.setFontSize(9);
     doc.text("Authorized Signatory", margin, yPos + 4);
-    doc.text(adminName, margin, yPos + 10);
+    doc.setFont("helvetica", "bold");
+    doc.text("Sandeep.V", margin, yPos + 12);
+    doc.setFont("helvetica", "normal");
+    doc.text(adminName, margin, yPos + 16);
     doc.setFont("helvetica", "bold"); doc.setFontSize(10);
     doc.text("Accepted By:", pageWidth - margin - 50, yPos);
     doc.setFont("helvetica", "normal");
