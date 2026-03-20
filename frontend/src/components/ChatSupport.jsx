@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { MessageSquare, X, Send } from 'lucide-react';
-import { useAuth } from '../context/AuthContext';
+import { useAuth, API_BASE } from '../context/AuthContext';
 
 export default function ChatSupport() {
     const { user } = useAuth();
@@ -9,7 +9,7 @@ export default function ChatSupport() {
     const [input, setInput] = useState('');
     const messagesEndRef = useRef(null);
 
-    const API_BASE = import.meta.env.VITE_API_URL || '';
+    // API_BASE is imported from AuthContext - correctly resolves to Render in production
 
     // Initial load and polling for new messages
     useEffect(() => {

@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
-import { useAuth } from '../../context/AuthContext';
+import { useAuth, API_BASE } from '../../context/AuthContext';
 import Navbar from '../../components/Navbar';
 import { MessageSquare, Send, Search, User } from 'lucide-react';
 import { useLocation } from 'react-router-dom';
@@ -13,7 +13,7 @@ export default function AdminChat() {
     const [input, setInput] = useState('');
     const messagesEndRef = useRef(null);
 
-    const API_BASE = import.meta.env.VITE_API_URL || '';
+    // API_BASE is imported from AuthContext - correctly resolves to Render in production
 
     // Fetch active conversations
     useEffect(() => {

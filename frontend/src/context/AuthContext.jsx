@@ -3,7 +3,7 @@ import React, { createContext, useContext, useState, useEffect } from 'react';
 const AuthContext = createContext(null);
 
 export const FRONTEND_VERSION = '2.0.3-RELEASE';
-export const API_BASE = import.meta.env.VITE_API_URL || '';
+// NOTE: API_BASE is set AFTER getApiBase is defined below. See line ~34.
 // Fallback logic for local development if VITE_API_URL is missing
 const getApiBase = () => {
     // Determine if we are running in a local dev environment vs production
@@ -21,6 +21,8 @@ const getApiBase = () => {
     return 'https://onboarding-website-1.onrender.com'; 
 };
 export const ACTUAL_API_BASE = getApiBase();
+// API_BASE is an alias for ACTUAL_API_BASE - properly resolves to Render in production
+export const API_BASE = ACTUAL_API_BASE;
 
 export const AuthProvider = ({ children }) => {
     const [user, setUser] = useState(null);
