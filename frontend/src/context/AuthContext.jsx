@@ -10,26 +10,14 @@ const getApiBase = () => {
     const isLocalhost = typeof window !== 'undefined' && 
         (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1');
 
-    // If an environment variable is provided, check if it's safe to use
-    if (import.meta.env.VITE_API_URL) {
-        const envUrl = import.meta.env.VITE_API_URL;
-        
-        // CRITICAL FIX: If Vercel accidentally baked in 'localhost:5000' as the URL,
-        // but the user is accessing an actual website domain, IGNORE IT!
-        if (envUrl.includes('localhost') && !isLocalhost) {
-            console.log("WARN: Ignored local VITE_API_URL in production environment. Falling back to Render.");
-            return 'https://onboarding-website-1.onrender.com';
-        }
-        
-        return envUrl;
-    }
-
     // For local development with Vite
     if (isLocalhost) {
         return `http://${window.location.hostname}:5000`;
     }
     
-    // In production, fallback to Render URL
+    // FORCED PRODUCTION URL: 
+    // This absolutely guarantees that the frontend won't attempt to use localhost
+    // or rely on a broken Vercel /api proxy. It points directly to the live Render backend.
     return 'https://onboarding-website-1.onrender.com'; 
 };
 export const ACTUAL_API_BASE = getApiBase();
