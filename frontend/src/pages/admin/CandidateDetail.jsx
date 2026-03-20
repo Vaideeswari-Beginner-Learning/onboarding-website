@@ -13,7 +13,6 @@ export default function CandidateDetail() {
     const [loading, setLoading] = useState(true);
     const [showDonePopup, setShowDonePopup] = useState(false);
     const [sendingEmail, setSendingEmail] = useState(false);
-    const [showEmailConfirmModal, setShowEmailConfirmModal] = useState(false);
     const [targetEmail, setTargetEmail] = useState('');
     const [setupEmail, setSetupEmail] = useState('vaideeswari8@gmail.com');
     const [savingSetup, setSavingSetup] = useState(false);
@@ -216,89 +215,15 @@ export default function CandidateDetail() {
 
             if (response.ok) {
                 setShowOfferModal(false);
-                setShowEmailConfirmModal(true);
+                generateOfferLetter({ ...candidate, offerDetails: offerForm });
+                setCandidate(prev => ({ ...prev, offerLetterStatus: 'Generated' }));
+                alert("✅ Offer Letter Generated & Downloaded Successfully!");
             } else {
                 alert("❌ Failed to save offer details on server.");
             }
         } catch (error) {
             console.error("Error saving offer details:", error);
             alert("❌ System Error: Unable to save details.");
-        }
-    };
-
-    const [emailAuthFailed, setEmailAuthFailed] = useState(false);
-
-    const handleFinalSendEmail = async (e) => {
-        if (e) e.preventDefault();
-        setSendingEmail(true);
-        setEmailAuthFailed(false);
-        try {
-            const pdfBase64 = await generateOfferLetterBase64({ ...candidate, offerDetails: offerForm });
-            const token = localStorage.getItem('onboarding_token');
-            const emailResponse = await fetch(`${API_BASE}/api/admin/send-offer-email`, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${token}`
-                },
-                body: JSON.stringify({
-                    candidateId: candidate._id,
-                    pdfBase64,
-                    customEmail: offerForm.recipientEmail,
-                    appBaseUrl: API_BASE // Fixed: Use centralized API_BASE instead of dynamic extraction
-                })
-            });
-
-            const emailData = await emailResponse.json();
-
-            if (emailResponse.ok) {
-                alert(`✅ Done! Offer Letter has been sent from HR to ${offerForm.recipientEmail} successfully.`);
-                setShowEmailConfirmModal(false);
-                setCandidate(prev => ({ ...prev, offerLetterStatus: 'Sent' }));
-            } else if (emailData.error === 'AUTH_FAILED') {
-                setEmailAuthFailed(true);
-            } else {
-                const detailedError = emailData.detail ? `\n\nDetail: ${emailData.detail}` : (emailData.message || 'Check connection');
-                alert(`❌ Email failed: ${detailedError}`);
-            }
-        } catch (error) {
-            console.error("Error in final send flow:", error);
-            alert("❌ System Error: Unable to send email.");
-        } finally {
-            setSendingEmail(false);
-        }
-    };
-
-    const handleManualSendFallback = async () => {
-        setSendingEmail(true);
-        try {
-            const pdfBase64 = await generateOfferLetterBase64({ ...candidate, offerDetails: offerForm });
-            const token = localStorage.getItem('onboarding_token');
-            await fetch(`${API_BASE}/api/admin/save-offer-pdf`, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${token}`
-                },
-                body: JSON.stringify({
-                    candidateId: candidate._id,
-                    pdfBase64
-                })
-            });
-
-            const subject = encodeURIComponent(`Offer Letter - Forge India Connect`);
-            const downloadUrl = `${API_BASE}/api/public/offer-pdf/${candidate._id}`;
-            const body = encodeURIComponent(`Dear ${offerForm.employeeName},\n\nCongratulations! We are pleased to offer you the position of ${offerForm.jobRole}.\n\nYour official Offer Letter has been prepared and is ready for review.\n\nView/Download Offer Letter: ${downloadUrl}\n\n(Note: If you expected a PDF attachment, please ensure the HR System's Gmail SMTP is correctly configured with a 16-digit App Password).\n\nBest Regards,\nHR Administration Team\n${offerForm.companyName}`);
-            const gmailUrl = `https://mail.google.com/mail/?view=cm&fs=1&to=${offerForm.recipientEmail}&su=${subject}&body=${body}`;
-            window.open(gmailUrl, '_blank');
-
-            setShowEmailConfirmModal(false);
-            setCandidate(prev => ({ ...prev, offerLetterStatus: 'Sent (Manual)' }));
-        } catch (error) {
-            console.error("Error in manual send fallback:", error);
-            alert("❌ Failed to prepare manual email. Please try again.");
-        } finally {
-            setSendingEmail(false);
         }
     };
 
@@ -668,86 +593,8 @@ export default function CandidateDetail() {
                         <div className="p-4 border-t border-slate-100 flex justify-end gap-3 bg-slate-50/50 rounded-b-2xl">
                             <button type="button" onClick={() => setShowOfferModal(false)} className="px-4 py-2 border border-slate-300 rounded-lg text-slate-700 hover:bg-slate-50 font-medium text-sm">Cancel</button>
                             <button type="submit" form="offerForm" className="px-8 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 font-bold text-sm shadow-lg shadow-blue-500/20 transition-all flex items-center">
-                                Next Step <ArrowLeft className="w-4 h-4 ml-2 rotate-180" />
+                                Submit & Download <Download className="w-4 h-4 ml-2" />
                             </button>
-                        </div>
-                    </div>
-                </div>
-            )}
-
-            {/* Step 2: Confirmation Email Modal */}
-            {showEmailConfirmModal && (
-                <div className="fixed inset-0 z-[60] flex items-center justify-center p-4">
-                    <div className="absolute inset-0 bg-slate-900/60 backdrop-blur-md" onClick={() => setShowEmailConfirmModal(false)}></div>
-                    <div className="bg-white rounded-2xl shadow-2xl w-full max-w-sm relative z-10 animate-in zoom-in-95 duration-200">
-                        <div className="p-6 text-center">
-                            <div className="w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-4 text-blue-600">
-                                <Mail className="w-8 h-8" />
-                            </div>
-                            <h2 className="text-xl font-bold text-slate-900 mb-2">Confirm Email Address</h2>
-                            <p className="text-sm text-slate-500 mb-6">Please verify the employee's email address before sending the Offer Letter.</p>
-
-                            <div className="space-y-4 text-left">
-                                <div>
-                                    <label className="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1">Confirm Recipient Email:</label>
-                                    <div className="relative">
-                                        <Mail className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-blue-500" />
-                                        <input
-                                            type="email"
-                                            value={offerForm.recipientEmail}
-                                            onChange={(e) => setOfferForm(prev => ({ ...prev, recipientEmail: e.target.value }))}
-                                            className="w-full pl-10 pr-4 py-3 bg-slate-50 rounded-xl border border-slate-200 font-medium text-slate-900 focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
-                                            placeholder="Verify email address"
-                                        />
-                                    </div>
-                                    <p className="text-[10px] text-slate-400 mt-1 italic">* You can edit this if the pre-filled email is incorrect.</p>
-                                </div>
-                            </div>
-
-                            <div className="grid grid-cols-2 gap-3 mt-8">
-                                <button
-                                    onClick={() => {
-                                        setShowEmailConfirmModal(false);
-                                        setShowOfferModal(true);
-                                    }}
-                                    className="px-4 py-2.5 border border-slate-200 rounded-xl text-slate-600 hover:bg-slate-50 font-semibold text-sm transition-colors"
-                                >
-                                    Go Back
-                                </button>
-                                {emailAuthFailed ? (
-                                    <button
-                                        onClick={handleManualSendFallback}
-                                        className="px-4 py-2.5 bg-emerald-600 text-white rounded-xl hover:bg-emerald-700 font-bold text-sm shadow-lg shadow-emerald-500/20 transition-all flex items-center justify-center animate-pulse"
-                                    >
-                                        Send Manually <ArrowLeft className="ml-2 w-4 h-4 rotate-180" />
-                                    </button>
-                                ) : (
-                                    <button
-                                        onClick={handleFinalSendEmail}
-                                        disabled={sendingEmail}
-                                        className="px-4 py-2.5 bg-blue-600 text-white rounded-xl hover:bg-blue-700 font-bold text-sm shadow-lg shadow-blue-500/20 transition-all flex items-center justify-center disabled:opacity-50"
-                                    >
-                                        {sendingEmail ? (
-                                            <Loader2 className="w-4 h-4 animate-spin" />
-                                        ) : (
-                                            <>Send Now <CheckCircle className="ml-2 w-4 h-4" /></>
-                                        )}
-                                    </button>
-                                )}
-                            </div>
-                            {emailAuthFailed && (
-                                <div className="mt-4 p-4 bg-rose-50 border border-rose-100 rounded-xl text-left">
-                                    <p className="text-xs font-bold text-rose-700 flex items-center gap-1.5 mb-1">
-                                        <AlertCircle className="w-3.5 h-3.5" /> Email Delivery Failed
-                                    </p>
-                                    <p className="text-[10px] text-rose-600 leading-relaxed">
-                                        The system couldn't send the PDF attachment automatically. This is usually due to an <strong>invalid Gmail App Password</strong> in your .env file.
-                                    </p>
-                                    <p className="text-[10px] text-rose-600 mt-2 italic font-medium">
-                                        Offline Backup: Click "Send Manually" below to open Gmail with a download link instead.
-                                    </p>
-                                </div>
-                            )}
                         </div>
                     </div>
                 </div>
