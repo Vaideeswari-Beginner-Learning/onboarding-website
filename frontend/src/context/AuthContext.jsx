@@ -88,8 +88,8 @@ export const AuthProvider = ({ children }) => {
     };
 
     const loginCandidate = async (email) => {
+        const url = `${ACTUAL_API_BASE}/api/auth/candidate/login`;
         try {
-            const url = `${ACTUAL_API_BASE}/api/auth/candidate/login`;
             console.log('--- CANDIDATE LOGIN START ---');
             console.log('URL:', url);
             const response = await fetch(url, {

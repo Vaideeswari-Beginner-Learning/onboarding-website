@@ -209,7 +209,7 @@ app.post('/api/auth/candidate/login', async (req, res) => {
             // Auto-register if not found
             candidate = new Candidate({
                 id: 'CAND-' + Math.random().toString(36).substr(2, 9),
-                name: name || email.split('@')[0], // Use provided name or default from email
+                name: email.split('@')[0], // Use default from email
                 email: email,
                 role: 'candidate',
                 status: 'Onboarding',

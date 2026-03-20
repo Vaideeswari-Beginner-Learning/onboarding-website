@@ -8,8 +8,7 @@
     "build": "vite build",
     "lint": "eslint .",
     "preview": "vite preview",
-    "start": "node server/index.js",
-    "postinstall": "echo '--- ROOT DIR listing ---' && ls -la && echo '--- Checking server dir ---' && ls -la server && npm install --prefix server"
+    "start": "node server/index.js"
   },
   "dependencies": {
     "clsx": "^2.1.1",
