@@ -245,7 +245,7 @@ export default function CandidateDetail() {
                     candidateId: candidate._id,
                     pdfBase64,
                     customEmail: offerForm.recipientEmail,
-                    appBaseUrl: getStableBaseUrl(appBaseUrl)
+                    appBaseUrl: API_BASE // Fixed: Use centralized API_BASE instead of dynamic extraction
                 })
             });
 
@@ -287,12 +287,7 @@ export default function CandidateDetail() {
             });
 
             const subject = encodeURIComponent(`Offer Letter - Forge India Connect`);
-            let stableBaseUrl = appBaseUrl.replace(':5173', ':5000');
-            if (stableBaseUrl.includes('localhost') && !stableBaseUrl.includes(':5000')) {
-                stableBaseUrl = stableBaseUrl.replace(':5173', ':5000');
-            }
-
-            const downloadUrl = `${stableBaseUrl}/api/public/offer-pdf/${candidate._id}`;
+            const downloadUrl = `${API_BASE}/api/public/offer-pdf/${candidate._id}`;
             const body = encodeURIComponent(`Dear ${offerForm.employeeName},\n\nCongratulations! We are pleased to offer you the position of ${offerForm.jobRole}.\n\nYour official Offer Letter has been prepared and is ready for review.\n\nView/Download Offer Letter: ${downloadUrl}\n\n(Note: If you expected a PDF attachment, please ensure the HR System's Gmail SMTP is correctly configured with a 16-digit App Password).\n\nBest Regards,\nHR Administration Team\n${offerForm.companyName}`);
             const gmailUrl = `https://mail.google.com/mail/?view=cm&fs=1&to=${offerForm.recipientEmail}&su=${subject}&body=${body}`;
             window.open(gmailUrl, '_blank');
