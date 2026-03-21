@@ -739,70 +739,7 @@ export default function CandidateDetail() {
                 </div>
             )}
 
-            {/* System Configuration - For Mobile Testing */}
-            <div className="max-w-4xl mx-auto mt-12 mb-20 px-4">
-                <div className="bg-slate-900 rounded-3xl p-8 text-white shadow-2xl relative overflow-hidden">
-                    <div className="absolute top-0 right-0 w-64 h-64 bg-blue-500/10 rounded-full -mr-32 -mt-32 blur-3xl"></div>
-                    <div className="relative z-10">
-                        <div className="flex items-center gap-3 mb-6">
-                            <div className="w-10 h-10 bg-blue-500/20 rounded-xl flex items-center justify-center">
-                                <AlertCircle className="w-6 h-6 text-blue-400" />
-                            </div>
-                            <div>
-                                <h3 className="text-xl font-bold">System Configuration</h3>
-                                <p className="text-slate-400 text-sm">Required for mobile link testing</p>
-                            </div>
-                        </div>
 
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-8 items-end">
-                            <div className="space-y-4">
-                                <div>
-                                    <label className="block text-sm font-medium text-slate-400 mb-2">Backend IP Address (Important!)</label>
-                                    <input
-                                        type="text"
-                                        value={appBaseUrl}
-                                        onChange={(e) => {
-                                            const val = e.target.value;
-                                            setAppBaseUrl(val);
-                                            localStorage.setItem('appBaseUrl', val);
-                                        }}
-                                        placeholder="http://192.168.1.5:5000"
-                                        className="w-full bg-slate-800 border-slate-700 rounded-xl text-white py-3 px-4 focus:ring-2 focus:ring-blue-500 transition-all text-sm font-mono"
-                                    />
-                                </div>
-                                <div className="p-4 bg-orange-500/10 border border-orange-500/20 rounded-2xl">
-                                    <p className="text-xs text-orange-300 leading-relaxed mb-3">
-                                        <strong>⚠️ Warning:</strong> Your current URL is <code>{appBaseUrl}</code>. If it says <b>localhost</b>, it will <strong>NOT</strong> work on your phone.
-                                    </p>
-                                    {suggestedUrl && suggestedUrl !== appBaseUrl && (
-                                        <button
-                                            onClick={() => {
-                                                setAppBaseUrl(suggestedUrl);
-                                                localStorage.setItem('appBaseUrl', suggestedUrl);
-                                            }}
-                                            className="w-full bg-orange-500 hover:bg-orange-600 text-white py-2 px-4 rounded-lg text-xs font-bold transition-all shadow-lg active:scale-95 mb-2"
-                                        >
-                                            🚀 Auto-Fix for Mobile Testing
-                                        </button>
-                                    )}
-                                    <p className="text-[10px] text-slate-400 leading-relaxed">
-                                        Detecting server at: <code>{suggestedUrl || 'Counting...'}</code>.
-                                        Enter <code>http://[DEVICE_IP]:5000</code> for mobile.
-                                    </p>
-                                </div>
-                            </div>
-
-                            <div className="flex flex-col gap-3">
-                                <div className="flex items-center gap-2 text-emerald-400 text-sm font-medium bg-emerald-500/10 px-4 py-3 rounded-xl border border-emerald-500/20">
-                                    <CheckCircle className="w-4 h-4" />
-                                    <span>All links updated instantly</span>
-                                </div>
-                                <p className="text-[10px] text-slate-500 text-center uppercase tracking-widest font-bold">Current Link Prefix: {appBaseUrl}</p>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
 
             {/* Email Settings Modal */}
             {showSettingsModal && (
