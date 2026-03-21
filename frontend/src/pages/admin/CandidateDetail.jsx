@@ -394,16 +394,16 @@ export default function CandidateDetail() {
                 )}
 
                 {/* Header */}
-                <div className="bg-white rounded-3xl shadow-sm border border-slate-100 p-8 mb-8 relative overflow-hidden">
+                <div className="bg-white rounded-2xl md:rounded-3xl shadow-sm border border-slate-100 p-5 md:p-8 mb-8 relative overflow-hidden">
                     <div className="absolute top-0 right-0 w-64 h-64 bg-blue-500/5 rounded-full -mr-32 -mt-32 blur-3xl"></div>
                     <div className="relative z-10 md:flex justify-between items-center">
                         <div className="flex gap-6 items-center">
-                            <div className="shrink-0 h-20 w-20 rounded-2xl bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center text-white text-3xl font-bold shadow-lg shadow-blue-200">
+                            <div className="shrink-0 h-16 w-16 md:h-20 md:w-20 rounded-2xl bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center text-white text-2xl md:text-3xl font-bold shadow-lg shadow-blue-200">
                                 {candidate.name?.charAt(0) || 'U'}
                             </div>
                             <div className="min-w-0 flex-1">
-                                <h1 className="text-3xl font-extrabold text-slate-900 tracking-tight truncate">{candidate.name}</h1>
-                                <p className="text-slate-500 font-medium mt-1 truncate">{candidate.role || 'Candidate'} • ID: {candidate._id?.slice(-6).toUpperCase()}</p>
+                                <h1 className="text-2xl md:text-3xl font-extrabold text-slate-900 tracking-tight">{candidate.name}</h1>
+                                <p className="text-xs sm:text-sm text-slate-500 font-bold mt-1 uppercase tracking-wider">{candidate.role || 'Candidate'} <span className="mx-1 opacity-40">•</span> ID: {candidate.id || candidate._id?.slice(-6).toUpperCase()}</p>
                                 <div className="mt-3 flex flex-wrap gap-2">
                                     <span className={`px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider ${candidate.status === 'Verified' ? 'bg-green-100 text-green-700' :
                                         candidate.status === 'Rejected' ? 'bg-red-100 text-red-700' :
@@ -445,7 +445,7 @@ export default function CandidateDetail() {
 
                 <div className="grid md:grid-cols-3 gap-6">
                     <div className="md:col-span-1 space-y-6">
-                        <div className="bg-white rounded-2xl shadow-sm border border-slate-100 p-6">
+                        <div className="bg-white rounded-2xl shadow-sm border border-slate-100 p-5 md:p-6">
                             <h3 className="text-lg font-bold text-slate-900 mb-4 flex items-center">
                                 <User className="w-5 h-5 mr-2 text-slate-500" />
                                 Personal Details
@@ -492,7 +492,7 @@ export default function CandidateDetail() {
                             </div>
                         </div>
 
-                        <div className="bg-white rounded-2xl shadow-sm border border-slate-100 p-6">
+                        <div className="bg-white rounded-2xl shadow-sm border border-slate-100 p-5 md:p-6">
                             <h3 className="text-lg font-bold text-slate-900 mb-4 flex items-center">
                                 <FileText className="w-5 h-5 mr-2 text-slate-500" />
                                 Bank Details
@@ -525,7 +525,7 @@ export default function CandidateDetail() {
                     </div>
 
                     <div className="md:col-span-2 space-y-6">
-                        <div className="bg-white rounded-2xl shadow-sm border border-slate-100 p-6">
+                        <div className="bg-white rounded-2xl shadow-sm border border-slate-100 p-5 md:p-6">
                             <h3 className="text-lg font-bold text-slate-900 mb-6 flex items-center">
                                 <FileText className="w-5 h-5 mr-2 text-slate-500" />
                                 Submitted Documents
@@ -538,7 +538,7 @@ export default function CandidateDetail() {
                                     </div>
                                 ) : (
                                     docs.map((doc, idx) => (
-                                        <div key={idx} className="flex items-center justify-between p-5 bg-white rounded-2xl border border-slate-200 hover:border-blue-400 hover:shadow-md transition-all group">
+                                        <div key={idx} className="flex flex-col sm:flex-row sm:items-center justify-between p-4 sm:p-5 bg-white rounded-2xl border border-slate-200 hover:border-blue-400 hover:shadow-md transition-all group gap-4">
                                             <div className="flex items-center">
                                                 <div className="bg-blue-50 p-3 rounded-xl border border-blue-100 group-hover:bg-blue-600 group-hover:text-white transition-colors">
                                                     <FileText className="w-6 h-6" />

@@ -63,7 +63,7 @@ export default function CandidateDashboard() {
                 </div>
 
                 {/* Status Tracker */}
-                <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-100 mb-8">
+                <div className="bg-white p-5 md:p-6 rounded-2xl shadow-sm border border-slate-100 mb-8">
                     <h2 className="text-lg font-semibold text-slate-900 mb-4">Onboarding Progress</h2>
                     <StatusTracker currentStep={currentStep} />
                 </div>
@@ -79,7 +79,7 @@ export default function CandidateDashboard() {
                             ? 'bg-gradient-to-br from-violet-600 to-indigo-600 shadow-indigo-500/20 hover:shadow-indigo-500/30'
                             : 'bg-white border-2 border-blue-100 hover:border-blue-300 shadow-blue-200/20'
                             }`}>
-                            <div className={`rounded-[22px] p-8 h-full relative overflow-hidden transition-colors ${localStorage.getItem('onboarding_personal_details') ? 'bg-white/10' : 'bg-white'
+                            <div className={`rounded-[22px] p-6 md:p-8 h-full relative overflow-hidden transition-colors ${localStorage.getItem('onboarding_personal_details') ? 'bg-white/10' : 'bg-white'
                                 }`}>
                                 <div className="absolute top-0 right-0 p-4 opacity-5 group-hover:opacity-10 transition-opacity">
                                     <FileText className={`w-32 h-32 ${localStorage.getItem('onboarding_personal_details') ? 'text-white' : 'text-blue-600'
@@ -114,7 +114,7 @@ export default function CandidateDashboard() {
                                 ? 'bg-gradient-to-br from-pink-500 to-rose-500 shadow-pink-500/20 hover:shadow-pink-500/30'
                                 : 'bg-white border-2 border-pink-100 hover:border-pink-300 shadow-pink-200/20'
                                 }`}>
-                                <div className={`rounded-[22px] p-8 h-full relative overflow-hidden transition-colors ${localStorage.getItem('onboarding_bank_details') ? 'bg-white/10' : 'bg-white'
+                                <div className={`rounded-[22px] p-6 md:p-8 h-full relative overflow-hidden transition-colors ${localStorage.getItem('onboarding_bank_details') ? 'bg-white/10' : 'bg-white'
                                     }`}>
                                     <div className="absolute top-0 right-0 p-4 opacity-5 group-hover:opacity-10 transition-opacity">
                                         <FileText className={`w-32 h-32 ${localStorage.getItem('onboarding_bank_details') ? 'text-white' : 'text-pink-500'
@@ -162,7 +162,7 @@ export default function CandidateDashboard() {
                                 ? 'bg-gradient-to-br from-amber-400 to-orange-500 shadow-orange-500/20 hover:shadow-orange-500/30'
                                 : 'bg-white border-2 border-orange-100 hover:border-orange-300 shadow-orange-200/20'
                                 }`}>
-                                <div className={`rounded-[22px] p-8 h-full relative overflow-hidden transition-colors ${localStorage.getItem('candidate_docs') ? 'bg-white/10' : 'bg-white'
+                                <div className={`rounded-[22px] p-6 md:p-8 h-full relative overflow-hidden transition-colors ${localStorage.getItem('candidate_docs') ? 'bg-white/10' : 'bg-white'
                                     }`}>
                                     <div className="absolute top-0 right-0 p-4 opacity-5 group-hover:opacity-10 transition-opacity">
                                         <Upload className={`w-32 h-32 ${localStorage.getItem('candidate_docs') ? 'text-white' : 'text-orange-500'
