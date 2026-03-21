@@ -398,7 +398,7 @@ export default function CandidateDetail() {
                     <div className="absolute top-0 right-0 w-64 h-64 bg-blue-500/5 rounded-full -mr-32 -mt-32 blur-3xl"></div>
                     <div className="relative z-10 md:flex justify-between items-center">
                         <div className="flex gap-6 items-center">
-                            <div className="h-20 w-20 rounded-2xl bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center text-white text-3xl font-bold shadow-lg shadow-blue-200">
+                            <div className="shrink-0 h-20 w-20 rounded-2xl bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center text-white text-3xl font-bold shadow-lg shadow-blue-200">
                                 {candidate.name?.charAt(0) || 'U'}
                             </div>
                             <div>
@@ -417,7 +417,7 @@ export default function CandidateDetail() {
                                 </div>
                             </div>
                         </div>
-                        <div className="flex flex-wrap gap-3 mt-6 md:mt-0 items-center">
+                        <div className="flex flex-col sm:flex-row w-full md:w-auto gap-3 mt-6 md:mt-0 sm:items-center">
                             {!mailerStatus.configured && (
                                 <button
                                     onClick={() => setShowSettingsModal(true)}
@@ -428,15 +428,15 @@ export default function CandidateDetail() {
                                 </button>
                             )}
 
-                            <button className="inline-flex items-center px-5 py-2.5 rounded-xl shadow-lg shadow-blue-200 text-sm font-bold text-white bg-blue-600 hover:bg-blue-700 transition-all hover:-translate-y-0.5" onClick={() => setShowChat(true)}>
+                            <button className="w-full sm:w-auto justify-center inline-flex items-center px-5 py-2.5 rounded-xl shadow-lg shadow-blue-200 text-sm font-bold text-white bg-blue-600 hover:bg-blue-700 transition-all hover:-translate-y-0.5" onClick={() => setShowChat(true)}>
                                 <User className="w-4 h-4 mr-2" /> Chat
                             </button>
-                            <button className="inline-flex items-center px-5 py-2.5 rounded-xl border border-slate-200 text-sm font-bold text-slate-600 bg-white hover:bg-slate-50 transition-all">
+                            <button className="w-full sm:w-auto justify-center inline-flex items-center px-5 py-2.5 rounded-xl border border-slate-200 text-sm font-bold text-slate-600 bg-white hover:bg-slate-50 transition-all">
                                 <XCircle className="w-4 h-4 mr-2 text-red-500" /> Reject
                             </button>
                             <button
                                 onClick={() => setShowDonePopup(true)}
-                                className="inline-flex items-center px-5 py-2.5 rounded-xl shadow-lg shadow-emerald-200 text-sm font-bold text-white bg-emerald-600 hover:bg-emerald-700 transition-all hover:-translate-y-0.5">
+                                className="w-full sm:w-auto justify-center inline-flex items-center px-5 py-2.5 rounded-xl shadow-lg shadow-emerald-200 text-sm font-bold text-white bg-emerald-600 hover:bg-emerald-700 transition-all hover:-translate-y-0.5">
                                 <CheckCircle className="w-4 h-4 mr-2" /> Approve
                             </button>
                         </div>
