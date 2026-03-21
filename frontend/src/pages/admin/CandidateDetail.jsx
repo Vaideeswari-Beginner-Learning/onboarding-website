@@ -4,6 +4,8 @@ import { useAuth, API_BASE } from '../../context/AuthContext';
 import Navbar from '../../components/Navbar';
 import { ArrowLeft, Download, CheckCircle, XCircle, FileText, User, Eye, PartyPopper, Mail, Loader2, AlertCircle, Settings, Key } from 'lucide-react';
 import { generateOfferLetter, generateOfferLetterBase64 } from '../../utils/offerLetterGenerator';
+import JSZip from 'jszip';
+import { saveAs } from 'file-saver';
 
 export default function CandidateDetail() {
     const navigate = useNavigate();
@@ -195,6 +197,37 @@ export default function CandidateDetail() {
             }
         }
         return url;
+    };
+
+    const handleDownloadAll = async () => {
+        if (!candidate || !candidate.documents || candidate.documents.length === 0) {
+            alert("No documents to download.");
+            return;
+        }
+
+        try {
+            const zip = new JSZip();
+            const docsFolder = zip.folder(`${candidate.name.replace(/\s+/g, '_')}_Documents`);
+
+            candidate.documents.forEach((doc, idx) => {
+                if (doc.url) {
+                    const base64Data = doc.url.split(',')[1];
+                    let extension = '.pdf';
+                    if (doc.url.startsWith('data:image/jpeg')) extension = '.jpg';
+                    else if (doc.url.startsWith('data:image/png')) extension = '.png';
+                    
+                    const cleanName = doc.name ? doc.name.replace(/[^a-zA-Z0-9.\-_]/g, '_') : `${doc.type.replace(/\s+/g, '_')}_${idx + 1}${extension}`;
+                    docsFolder.file(cleanName, base64Data, { base64: true });
+                }
+            });
+
+            const content = await zip.generateAsync({ type: 'blob' });
+            saveAs(content, `${candidate.name.replace(/\s+/g, '_')}_Documents.zip`);
+
+        } catch (error) {
+            console.error("Error generating zip:", error);
+            alert("Failed to download documents. Please try again.");
+        }
     };
 
     const handlePrepareOffer = async (e) => {
@@ -513,7 +546,15 @@ export default function CandidateDetail() {
                             </div>
                         </div>
 
-                        <div className="flex justify-end pt-4">
+                        <div className="flex justify-end pt-4 gap-4">
+                            <button
+                                onClick={handleDownloadAll}
+                                disabled={!docs || docs.length === 0}
+                                className="px-6 py-3 bg-white border-2 border-slate-200 text-slate-700 rounded-xl font-bold hover:border-blue-300 hover:bg-blue-50 transition-all text-sm flex items-center disabled:opacity-50 disabled:cursor-not-allowed shadow-sm"
+                            >
+                                <Download className="w-5 h-5 mr-2 text-slate-400" />
+                                Download All
+                            </button>
                             <button
                                 onClick={() => setShowDonePopup(true)}
                                 className="px-8 py-3 bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-xl font-bold shadow-lg shadow-blue-500/30 hover:shadow-xl hover:scale-105 transition-all text-lg flex items-center"
