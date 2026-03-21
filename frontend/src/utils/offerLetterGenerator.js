@@ -453,12 +453,14 @@ export const generateOfferLetter = async (candidate) => {
     yPos += 10;
 
     // Admin
-    doc.setFont("helvetica", "bold");
-    doc.text(`FORGE INDIA CONNECT PVT.LTD`, margin, yPos);
-    doc.text("Sandeep.V", margin, yPos + 12);
     doc.setFont("helvetica", "normal");
     doc.setFontSize(9);
-    doc.text("Authorized Signatory", margin, yPos + 16);
+    doc.text("Authorized Signatory", margin, yPos);
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(10);
+    doc.text("Sandeep.V", margin, yPos + 8);
+    doc.setFont("helvetica", "bold");
+    doc.text("FORGE INDIA CONNECT PVT.LTD", margin, yPos + 16);
 
     // Candidate
     doc.setFont("helvetica", "bold");
@@ -481,7 +483,7 @@ export const generateOfferLetterBase64 = async (candidate) => {
     const offer = candidate.offerDetails || {};
     const companyName = offer.companyName || "FORGE INDIA CONNECT PVT.LTD";
     const companyAddress = offer.companyAddress || "Rk Tower, Royakottai, krishnagiri";
-    const adminName = offer.adminName || "HR Manager";
+    const adminName = offer.adminName || "";
     const employeeName = offer.employeeName || candidate.name;
 
     const parseCTC = (ctcStr) => {
@@ -758,11 +760,14 @@ export const generateOfferLetterBase64 = async (candidate) => {
     doc.setDrawColor(200);
     doc.line(margin, yPos, pageWidth - margin, yPos);
     yPos += 10;
+    doc.setFont("helvetica", "normal");
+    doc.setFontSize(9);
+    doc.text("Authorized Signatory", margin, yPos);
     doc.setFont("helvetica", "bold");
-    doc.text(`FORGE INDIA CONNECT PVT.LTD`, margin, yPos);
-    doc.text("Sandeep.V", margin, yPos + 12);
-    doc.setFont("helvetica", "normal"); doc.setFontSize(9);
-    doc.text("Authorized Signatory", margin, yPos + 16);
+    doc.setFontSize(10);
+    doc.text("Sandeep.V", margin, yPos + 8);
+    doc.setFont("helvetica", "bold");
+    doc.text("FORGE INDIA CONNECT PVT.LTD", margin, yPos + 16);
     doc.setFont("helvetica", "bold"); doc.setFontSize(10);
     doc.text("Accepted By:", pageWidth - margin - 50, yPos);
     doc.setFont("helvetica", "normal");

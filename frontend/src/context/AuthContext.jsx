@@ -2,7 +2,7 @@ import React, { createContext, useContext, useState, useEffect } from 'react';
 
 const AuthContext = createContext(null);
 
-export const FRONTEND_VERSION = '2.1.0-STABLE';
+export const FRONTEND_VERSION = '2.1.1-STABLE';
 // NOTE: API_BASE is set AFTER getApiBase is defined below. See line ~34.
 // Fallback logic for local development if VITE_API_URL is missing
 const getApiBase = () => {
@@ -14,10 +14,12 @@ const getApiBase = () => {
     if (isLocalhost) {
         return `http://${window.location.hostname}:5000`;
     }
-    
-    // FORCED PRODUCTION URL: 
-    // This absolutely guarantees that the frontend won't attempt to use localhost
-    // or rely on a broken Vercel /api proxy. It points directly to the live Render backend.
+    // Prefer VITE_API_URL environment variable if it exists (set in Vercel/Netlify)
+    const envUrl = import.meta.env.VITE_API_URL;
+    if (envUrl) return envUrl;
+
+    // FORCED PRODUCTION FALLBACK: 
+    // Point directly to the live Render backend if no env var is found.
     return 'https://onboarding-website-1.onrender.com'; 
 };
 export const ACTUAL_API_BASE = getApiBase();

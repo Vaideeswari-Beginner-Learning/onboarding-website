@@ -444,12 +444,19 @@ app.delete('/api/candidates/:id', authenticateToken, isAdmin, async (req, res) =
 });
 
 // Reset Candidate Onboarding (for Demo)
-app.post('/api/admin/reset-candidate/:id', authenticateToken, isAdmin, async (req, res) => {
+app.post('/api/admin/reset-candidate/:id', authenticateToken, async (req, res) => {
     try {
+        const targetId = req.params.id;
+
+        // RBAC Check: Admin OR the Candidate themselves can reset this profile
+        if (req.user.role !== 'admin' && req.user.id !== targetId) {
+            return res.status(403).json({ message: 'Access Denied: You can only reset your own profile' });
+        }
+
         const candidate = await Candidate.findOne({
             $or: [
-                { _id: mongoose.isValidObjectId(req.params.id) ? req.params.id : null },
-                { id: req.params.id }
+                { _id: mongoose.isValidObjectId(targetId) ? targetId : null },
+                { id: targetId }
             ]
         });
 

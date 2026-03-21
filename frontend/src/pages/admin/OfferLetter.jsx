@@ -95,10 +95,10 @@ export default function OfferLetter() {
                         <div>
                             <div className="h-16 w-32 mb-2">
                                 {/* Mock Signature */}
-                                <div className="font-script text-2xl text-blue-800 italic transform -rotate-6">HR Manager</div>
+                                <div className="font-script text-2xl text-blue-800 italic transform -rotate-6">Authorized Signatory</div>
                             </div>
                             <div className="border-t border-slate-400 pt-2 w-48">
-                                <p className="font-bold">HR Manager</p>
+                                <p className="font-bold">Authorized Signatory</p>
                                 <p className="text-sm text-slate-500">{letterData.company}</p>
                             </div>
                         </div>
