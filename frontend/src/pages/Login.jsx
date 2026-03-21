@@ -44,7 +44,7 @@ export default function Login() {
 
     return (
         <div className="min-h-screen bg-slate-50 flex flex-col justify-center py-12 sm:px-6 lg:px-8">
-            <div className="sm:mx-auto sm:w-full sm:max-w-md">
+            <div className="w-full px-4 sm:px-0 sm:mx-auto sm:w-full sm:max-w-md">
                 <div className="flex justify-center mb-6">
                     <div className="bg-blue-600 p-2 rounded-xl">
                         <Building2 className="w-8 h-8 text-white" />
@@ -61,7 +61,7 @@ export default function Login() {
                 </p>
             </div>
 
-            <div className="mt-8 sm:mx-auto sm:w-full sm:max-w-md">
+            <div className="w-full px-4 sm:px-0 mt-8 sm:mx-auto sm:w-full sm:max-w-md">
                 <div className="bg-white py-8 px-4 shadow-xl shadow-slate-200 sm:rounded-2xl sm:px-10 border border-slate-100">
                     {/* Tabs */}
                     <div className="flex border-b border-slate-200 mb-6">

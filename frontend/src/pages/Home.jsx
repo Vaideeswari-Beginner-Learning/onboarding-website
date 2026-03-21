@@ -8,7 +8,7 @@ export default function Home() {
             <Navbar />
 
             {/* Hero Section */}
-            <div className="relative overflow-hidden pt-20 pb-40 lg:pt-32 lg:pb-48 bg-slate-900">
+            <div className="relative overflow-hidden pt-16 pb-32 sm:pt-20 sm:pb-40 lg:pt-32 lg:pb-48 bg-slate-900">
                 <div className="absolute inset-0 bg-[url('https://images.unsplash.com/photo-1522071820081-009f0129c71c?ixlib=rb-1.2.1&auto=format&fit=crop&w=1950&q=80')] bg-cover bg-center opacity-20"></div>
                 <div className="absolute inset-0 bg-gradient-to-br from-blue-900/90 via-indigo-900/90 to-slate-900/90 backdrop-blur-sm"></div>
 
@@ -18,7 +18,7 @@ export default function Home() {
                         Next Generation Onboarding
                     </div>
 
-                    <h1 className="text-5xl md:text-7xl font-extrabold text-white tracking-tight mb-8 leading-tight">
+                    <h1 className="text-4xl sm:text-5xl md:text-7xl font-extrabold text-white tracking-tight mb-6 sm:mb-8 leading-tight">
                         Welcome to the <br />
                         <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-400 via-cyan-400 to-teal-400">Future of Work</span>
                     </h1>
