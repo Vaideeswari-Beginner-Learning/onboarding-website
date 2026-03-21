@@ -84,7 +84,8 @@ export const AuthProvider = ({ children }) => {
             return { success: true, role: data.user.role };
         } catch (error) {
             console.error(error);
-            alert(`LOGIN FAILED\nURL: ${url}\nError: ${error.message}`);
+            const errorUrl = `${ACTUAL_API_BASE}/api/auth/login`;
+            alert(`LOGIN FAILED\nURL: ${errorUrl}\nError: ${error.message}`);
             return { success: false, message: error.message };
         }
     };
@@ -189,7 +190,8 @@ export const AuthProvider = ({ children }) => {
             return true;
         } catch (error) {
             console.error(error);
-            alert(`REGISTRATION FAILED\nURL: ${url}\nError: ${error.message}`);
+            const errorUrl = `${ACTUAL_API_BASE}/api/auth/register`;
+            alert(`REGISTRATION FAILED\nURL: ${errorUrl}\nError: ${error.message}`);
             return false;
         }
     };
