@@ -215,8 +215,8 @@ export default function CandidateDashboard() {
 
                 {/* Offer Letter Section */}
                 <div className="mt-8 bg-white p-6 rounded-2xl shadow-sm border border-slate-100">
-                    <div className="flex items-center justify-between">
-                        <div>
+                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                        <div className="flex-1">
                             <h2 className="text-xl font-bold text-slate-900">Offer Letter Status</h2>
                             <p className="text-slate-600 mt-1">
                                 {user?.offerLetterStatus === 'Generated'
@@ -226,7 +226,7 @@ export default function CandidateDashboard() {
                                         : "Once you complete all onboarding steps, you can request your offer letter."}
                             </p>
                         </div>
-                        <div className="flex gap-4">
+                        <div className="flex flex-col sm:flex-row gap-3 w-full sm:w-auto">
                             {/* Reset Button (Demo specific) */}
                             <button
                                 onClick={async () => {
@@ -250,7 +250,7 @@ export default function CandidateDashboard() {
                                         }
                                     }
                                 }}
-                                className="px-6 py-2 bg-slate-100 text-slate-600 rounded-lg font-bold hover:bg-slate-200 transition-all"
+                                className="w-full sm:w-auto px-4 py-2 text-sm sm:text-base bg-slate-100 text-slate-600 rounded-lg font-bold hover:bg-slate-200 transition-all flex justify-center"
                             >
                                 Reset Progress
                             </button>
@@ -258,12 +258,12 @@ export default function CandidateDashboard() {
                             {user?.offerLetterStatus === 'Generated' ? (
                                 <button
                                     onClick={() => generateOfferLetter(user)}
-                                    className="px-6 py-2 bg-green-600 text-white rounded-lg font-bold shadow-lg shadow-green-500/30 hover:bg-green-700 transition-all flex items-center"
+                                    className="w-full sm:w-auto justify-center px-4 py-2 text-sm sm:text-base bg-green-600 text-white rounded-lg font-bold shadow-lg shadow-green-500/30 hover:bg-green-700 transition-all flex items-center"
                                 >
                                     <FileText className="w-5 h-5 mr-2" /> Download Offer
                                 </button>
                             ) : user?.offerLetterRequested ? (
-                                <span className="inline-flex items-center px-4 py-2 rounded-lg bg-yellow-100 text-yellow-700 font-bold border border-yellow-200">
+                                <span className="inline-flex w-full sm:w-auto justify-center items-center px-4 py-2 rounded-lg bg-yellow-100 text-yellow-700 font-bold border border-yellow-200">
                                     <Clock className="w-5 h-5 mr-2" /> Requested
                                 </span>
                             ) : (
@@ -292,7 +292,7 @@ export default function CandidateDashboard() {
                                         }
                                     }}
                                     disabled={!localStorage.getItem('candidate_docs')}
-                                    className={`px-6 py-2 rounded-lg font-bold transition-all flex items-center ${localStorage.getItem('candidate_docs')
+                                    className={`w-full sm:w-auto justify-center px-4 py-2 text-sm sm:text-base rounded-lg font-bold transition-all flex items-center ${localStorage.getItem('candidate_docs')
                                         ? 'bg-blue-600 text-white shadow-lg shadow-blue-500/30 hover:bg-blue-700'
                                         : 'bg-slate-200 text-slate-400 cursor-not-allowed'
                                         }`}

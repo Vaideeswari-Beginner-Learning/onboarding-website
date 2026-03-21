@@ -131,7 +131,7 @@ export default function Navbar() {
                     </div>
                 )}
             </div>
-            <div className="absolute bottom-0 right-2 pointer-events-none flex flex-col items-end">
+            <div className="absolute bottom-0 right-2 pointer-events-none hidden md:flex flex-col items-end">
                 <span className="text-[8px] text-slate-300 font-mono">{FRONTEND_VERSION}</span>
                 <span className="text-[6px] text-slate-200 font-mono opacity-30">{ACTUAL_API_BASE}</span>
             </div>
