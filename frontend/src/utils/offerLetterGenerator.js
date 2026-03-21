@@ -455,13 +455,10 @@ export const generateOfferLetter = async (candidate) => {
     // Admin
     doc.setFont("helvetica", "bold");
     doc.text(`FORGE INDIA CONNECT PVT.LTD`, margin, yPos);
-    doc.setFont("helvetica", "normal");
-    doc.setFontSize(9);
-    doc.text("Authorized Signatory", margin, yPos + 4);
-    doc.setFont("helvetica", "bold");
     doc.text("Sandeep.V", margin, yPos + 12);
     doc.setFont("helvetica", "normal");
-    doc.text(adminName, margin, yPos + 16);
+    doc.setFontSize(9);
+    doc.text("Authorized Signatory", margin, yPos + 16);
 
     // Candidate
     doc.setFont("helvetica", "bold");
@@ -763,12 +760,9 @@ export const generateOfferLetterBase64 = async (candidate) => {
     yPos += 10;
     doc.setFont("helvetica", "bold");
     doc.text(`FORGE INDIA CONNECT PVT.LTD`, margin, yPos);
-    doc.setFont("helvetica", "normal"); doc.setFontSize(9);
-    doc.text("Authorized Signatory", margin, yPos + 4);
-    doc.setFont("helvetica", "bold");
     doc.text("Sandeep.V", margin, yPos + 12);
-    doc.setFont("helvetica", "normal");
-    doc.text(adminName, margin, yPos + 16);
+    doc.setFont("helvetica", "normal"); doc.setFontSize(9);
+    doc.text("Authorized Signatory", margin, yPos + 16);
     doc.setFont("helvetica", "bold"); doc.setFontSize(10);
     doc.text("Accepted By:", pageWidth - margin - 50, yPos);
     doc.setFont("helvetica", "normal");
