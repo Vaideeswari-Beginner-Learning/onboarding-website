@@ -394,12 +394,7 @@ export default function CandidateDetail() {
                                     <span className="text-[10px] font-bold uppercase">Configure Mailer</span>
                                 </button>
                             )}
-                            <button
-                                className="inline-flex items-center px-5 py-2.5 rounded-xl shadow-lg shadow-indigo-200 text-sm font-bold text-white bg-indigo-600 hover:bg-indigo-700 transition-all hover:-translate-y-0.5"
-                                onClick={() => setShowOfferModal(true)}
-                            >
-                                <Mail className="w-4 h-4 mr-2" /> Send Offer
-                            </button>
+
                             <button className="inline-flex items-center px-5 py-2.5 rounded-xl shadow-lg shadow-blue-200 text-sm font-bold text-white bg-blue-600 hover:bg-blue-700 transition-all hover:-translate-y-0.5" onClick={() => setShowChat(true)}>
                                 <User className="w-4 h-4 mr-2" /> Chat
                             </button>

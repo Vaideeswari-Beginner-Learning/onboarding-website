@@ -323,6 +323,12 @@ app.put('/api/candidates/update', authenticateToken, async (req, res) => {
     const { email, ...updateData } = req.body;
 
     try {
+        // RBAC Check: Only Admin or the Candidate themselves can update this profile
+        if (req.user.role !== 'admin' && req.user.email !== email) {
+            return res.status(403).json({ message: 'Access Denied: You can only update your own profile' });
+        }
+
+
         const candidate = await Candidate.findOneAndUpdate(
             { email },
             { $set: updateData },
@@ -343,6 +349,12 @@ app.put('/api/candidates/update', authenticateToken, async (req, res) => {
 app.post('/api/candidates/request-offer', authenticateToken, async (req, res) => {
     const { email } = req.body;
     try {
+        // RBAC Check: Only Admin or the Candidate themselves can request
+        if (req.user.role !== 'admin' && req.user.email !== email) {
+            return res.status(403).json({ message: 'Access Denied: Unauthorized request' });
+        }
+
+
         const candidate = await Candidate.findOneAndUpdate(
             { email },
             {
@@ -406,6 +418,12 @@ app.get('/api/candidates/:id', authenticateToken, async (req, res) => {
         if (!candidate) {
             return res.status(404).json({ message: 'Candidate not found' });
         }
+
+        // RBAC Check: Only Admin or the Candidate themselves can view this profile
+        if (req.user.role !== 'admin' && req.user.email !== candidate.email && req.user.id !== candidate.id && req.user.id !== candidate._id.toString()) {
+            return res.status(403).json({ message: 'Access Denied: You can only view your own profile' });
+        }
+
         res.json(candidate);
     } catch (error) {
         console.error('Fetch Candidate Error:', error);
