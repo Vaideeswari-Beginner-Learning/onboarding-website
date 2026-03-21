@@ -33,6 +33,13 @@ export default function CandidateDetail() {
     const [testResult, setTestResult] = useState(null);
     const chatEndRef = useRef(null);
 
+    // --- Edit Mode States ---
+    const [isEditingPersonal, setIsEditingPersonal] = useState(false);
+    const [isEditingBank, setIsEditingBank] = useState(false);
+    const [tempPersonal, setTempPersonal] = useState({});
+    const [tempBank, setTempBank] = useState({});
+    const [savingDetails, setSavingDetails] = useState(false);
+
 
     // Fetch Candidate Details
     useEffect(() => {
@@ -165,7 +172,8 @@ export default function CandidateDetail() {
         joiningDate: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
         responsibilities: '',
         companyAddress: '123 Tech Park, Innovation Street, Bangalore, Karnataka - 560001',
-        recipientEmail: ''
+        recipientEmail: '',
+        employeeId: ''
     });
 
     useEffect(() => {
@@ -174,7 +182,8 @@ export default function CandidateDetail() {
                 ...prev,
                 employeeName: candidate.name,
                 recipientEmail: candidate.email,
-                jobRole: candidate.personalDetails?.jobRole || prev.jobRole
+                jobRole: candidate.personalDetails?.jobRole || prev.jobRole,
+                employeeId: candidate.id || ''
             }));
             setTargetEmail(candidate.email);
         }
@@ -308,6 +317,51 @@ export default function CandidateDetail() {
             alert('❌ System Error: Unable to save settings.');
         } finally {
             setSavingSettings(false);
+        }
+    };
+
+    const handleEditPersonal = () => {
+        setTempPersonal({ ...candidate.personalDetails });
+        setIsEditingPersonal(true);
+    };
+
+    const handleEditBank = () => {
+        setTempBank({ ...candidate.bankDetails });
+        setIsEditingBank(true);
+    };
+
+    const handleUpdateDetails = async (type) => {
+        setSavingDetails(true);
+        try {
+            const token = localStorage.getItem('onboarding_token');
+            const updateData = type === 'personal' ? { personalDetails: tempPersonal } : { bankDetails: tempBank };
+            
+            const response = await fetch(`${API_BASE}/api/candidates/update`, {
+                method: 'PUT',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${token}`
+                },
+                body: JSON.stringify({
+                    email: candidate.email,
+                    ...updateData
+                })
+            });
+
+            if (response.ok) {
+                const data = await response.json();
+                setCandidate(data.user);
+                setIsEditingPersonal(false);
+                setIsEditingBank(false);
+                alert("✅ Details updated successfully!");
+            } else {
+                alert("❌ Failed to update details.");
+            }
+        } catch (error) {
+            console.error("Update error:", error);
+            alert("❌ System error during update.");
+        } finally {
+            setSavingDetails(false);
         }
     };
 
@@ -446,43 +500,105 @@ export default function CandidateDetail() {
                 <div className="grid md:grid-cols-3 gap-6">
                     <div className="md:col-span-1 space-y-6">
                         <div className="bg-white rounded-2xl shadow-sm border border-slate-100 p-5 md:p-6">
-                            <h3 className="text-lg font-bold text-slate-900 mb-4 flex items-center">
-                                <User className="w-5 h-5 mr-2 text-slate-500" />
-                                Personal Details
-                            </h3>
+                            <div className="flex justify-between items-center mb-4">
+                                <h3 className="text-lg font-bold text-slate-900 flex items-center">
+                                    <User className="w-5 h-5 mr-2 text-slate-500" />
+                                    Personal Details
+                                </h3>
+                                {!isEditingPersonal ? (
+                                    <button onClick={handleEditPersonal} className="text-blue-600 hover:text-blue-700 text-xs font-bold uppercase tracking-wider flex items-center gap-1">
+                                        <Settings className="w-3 h-3" /> Edit
+                                    </button>
+                                ) : (
+                                    <div className="flex gap-2">
+                                        <button onClick={() => setIsEditingPersonal(false)} className="text-slate-400 hover:text-slate-600 text-xs font-bold uppercase">Cancel</button>
+                                        <button onClick={() => handleUpdateDetails('personal')} disabled={savingDetails} className="text-emerald-600 hover:text-emerald-700 text-xs font-bold uppercase disabled:opacity-50">Save</button>
+                                    </div>
+                                )}
+                            </div>
                             <div className="space-y-4">
                                 <div>
-                                    <label className="text-xs font-semibold text-slate-500 uppercase tracking-wider">Full Name</label>
-                                    <p className="text-sm text-slate-900 font-medium">{personal.firstName ? `${personal.firstName} ${personal.lastName}` : candidate.name}</p>
+                                    <label className="text-xs font-semibold text-slate-500 uppercase tracking-wider">First Name</label>
+                                    {isEditingPersonal ? (
+                                        <input type="text" value={tempPersonal.firstName || ''} onChange={(e) => setTempPersonal({ ...tempPersonal, firstName: e.target.value })} className="w-full mt-1 p-2 text-sm border rounded-lg focus:ring-2 focus:ring-blue-500" />
+                                    ) : (
+                                        <p className="text-sm text-slate-900 font-medium">{personal.firstName || 'N/A'}</p>
+                                    )}
+                                </div>
+                                <div>
+                                    <label className="text-xs font-semibold text-slate-500 uppercase tracking-wider">Last Name</label>
+                                    {isEditingPersonal ? (
+                                        <input type="text" value={tempPersonal.lastName || ''} onChange={(e) => setTempPersonal({ ...tempPersonal, lastName: e.target.value })} className="w-full mt-1 p-2 text-sm border rounded-lg focus:ring-2 focus:ring-blue-500" />
+                                    ) : (
+                                        <p className="text-sm text-slate-900 font-medium">{personal.lastName || 'N/A'}</p>
+                                    )}
+                                </div>
+                                <div>
+                                    <label className="text-xs font-semibold text-slate-500 uppercase tracking-wider">Candidate ID</label>
+                                    {isEditingPersonal ? (
+                                        <input type="text" value={tempPersonal.id || candidate.id || ''} onChange={(e) => setTempPersonal({ ...tempPersonal, id: e.target.value })} className="w-full mt-1 p-2 text-sm border rounded-lg focus:ring-2 focus:ring-blue-500" />
+                                    ) : (
+                                        <p className="text-sm text-slate-900 font-medium">{candidate.id || candidate._id?.slice(-6).toUpperCase()}</p>
+                                    )}
                                 </div>
                                 <div>
                                     <label className="text-xs font-semibold text-slate-500 uppercase tracking-wider">Email</label>
-                                    <p className="text-sm text-slate-900 font-medium break-words">{candidate.email}</p>
+                                    <p className="text-sm text-slate-400 font-medium break-words italic">{candidate.email} (Non-editable)</p>
                                 </div>
                                 <div>
                                     <label className="text-xs font-semibold text-slate-500 uppercase tracking-wider">Phone</label>
-                                    <p className="text-sm text-slate-900 font-medium">{personal.phone || 'N/A'}</p>
+                                    {isEditingPersonal ? (
+                                        <input type="text" value={tempPersonal.phone || ''} onChange={(e) => setTempPersonal({ ...tempPersonal, phone: e.target.value })} className="w-full mt-1 p-2 text-sm border rounded-lg focus:ring-2 focus:ring-blue-500" />
+                                    ) : (
+                                        <p className="text-sm text-slate-900 font-medium">{personal.phone || 'N/A'}</p>
+                                    )}
                                 </div>
                                 <div>
                                     <label className="text-xs font-semibold text-slate-500 uppercase tracking-wider">Date of Birth</label>
-                                    <p className="text-sm text-slate-900 font-medium">{personal.dob || 'N/A'}</p>
+                                    {isEditingPersonal ? (
+                                        <input type="date" value={tempPersonal.dob || ''} onChange={(e) => setTempPersonal({ ...tempPersonal, dob: e.target.value })} className="w-full mt-1 p-2 text-sm border rounded-lg focus:ring-2 focus:ring-blue-500" />
+                                    ) : (
+                                        <p className="text-sm text-slate-900 font-medium">{personal.dob || 'N/A'}</p>
+                                    )}
                                 </div>
                                 <div>
                                     <label className="text-xs font-semibold text-slate-500 uppercase tracking-wider">Gender</label>
-                                    <p className="text-sm text-slate-900 font-medium capitalize">{personal.gender || 'N/A'}</p>
-                                </div>
-                                <div>
-                                    <label className="text-xs font-semibold text-slate-500 uppercase tracking-wider">Father's Name</label>
-                                    <p className="text-sm text-slate-900 font-medium">{personal.fatherName || 'N/A'}</p>
+                                    {isEditingPersonal ? (
+                                        <select value={tempPersonal.gender || ''} onChange={(e) => setTempPersonal({ ...tempPersonal, gender: e.target.value })} className="w-full mt-1 p-2 text-sm border rounded-lg focus:ring-2 focus:ring-blue-500">
+                                            <option value="">Select</option>
+                                            <option value="male">Male</option>
+                                            <option value="female">Female</option>
+                                            <option value="other">Other</option>
+                                        </select>
+                                    ) : (
+                                        <p className="text-sm text-slate-900 font-medium capitalize">{personal.gender || 'N/A'}</p>
+                                    )}
                                 </div>
                                 <div>
                                     <label className="text-xs font-semibold text-slate-500 uppercase tracking-wider">Job Role</label>
-                                    <p className="text-sm text-slate-900 font-medium">{personal.jobRole || 'N/A'}</p>
+                                    {isEditingPersonal ? (
+                                        <input type="text" value={tempPersonal.jobRole || ''} onChange={(e) => setTempPersonal({ ...tempPersonal, jobRole: e.target.value })} className="w-full mt-1 p-2 text-sm border rounded-lg focus:ring-2 focus:ring-blue-500" />
+                                    ) : (
+                                        <p className="text-sm text-slate-900 font-medium">{personal.jobRole || 'N/A'}</p>
+                                    )}
                                 </div>
                                 <div>
                                     <label className="text-xs font-semibold text-slate-500 uppercase tracking-wider">Address</label>
-                                    <p className="text-sm text-slate-900 font-medium">{personal.address || 'N/A'}</p>
-                                    {personal.city && <p className="text-sm text-slate-500">{personal.city}, {personal.state} {personal.zip}</p>}
+                                    {isEditingPersonal ? (
+                                        <div className="space-y-2 mt-1">
+                                            <input type="text" placeholder="Street Address" value={tempPersonal.address || ''} onChange={(e) => setTempPersonal({ ...tempPersonal, address: e.target.value })} className="w-full p-2 text-sm border rounded-lg" />
+                                            <div className="grid grid-cols-2 gap-2">
+                                                <input type="text" placeholder="City" value={tempPersonal.city || ''} onChange={(e) => setTempPersonal({ ...tempPersonal, city: e.target.value })} className="p-2 text-sm border rounded-lg" />
+                                                <input type="text" placeholder="State" value={tempPersonal.state || ''} onChange={(e) => setTempPersonal({ ...tempPersonal, state: e.target.value })} className="p-2 text-sm border rounded-lg" />
+                                            </div>
+                                            <input type="text" placeholder="Zip/Postal Code" value={tempPersonal.zip || ''} onChange={(e) => setTempPersonal({ ...tempPersonal, zip: e.target.value })} className="w-full p-2 text-sm border rounded-lg" />
+                                        </div>
+                                    ) : (
+                                        <>
+                                            <p className="text-sm text-slate-900 font-medium">{personal.address || 'N/A'}</p>
+                                            {personal.city && <p className="text-sm text-slate-500">{personal.city}, {personal.state} {personal.zip}</p>}
+                                        </>
+                                    )}
                                 </div>
                                 <div>
                                     <label className="text-xs font-semibold text-slate-500 uppercase tracking-wider">Emergency Contact</label>
@@ -493,32 +609,71 @@ export default function CandidateDetail() {
                         </div>
 
                         <div className="bg-white rounded-2xl shadow-sm border border-slate-100 p-5 md:p-6">
-                            <h3 className="text-lg font-bold text-slate-900 mb-4 flex items-center">
-                                <FileText className="w-5 h-5 mr-2 text-slate-500" />
-                                Bank Details
-                            </h3>
+                            <div className="flex justify-between items-center mb-4">
+                                <h3 className="text-lg font-bold text-slate-900 flex items-center">
+                                    <FileText className="w-5 h-5 mr-2 text-slate-500" />
+                                    Bank Details
+                                </h3>
+                                {!isEditingBank ? (
+                                    <button onClick={handleEditBank} className="text-blue-600 hover:text-blue-700 text-xs font-bold uppercase tracking-wider flex items-center gap-1">
+                                        <Settings className="w-3 h-3" /> Edit
+                                    </button>
+                                ) : (
+                                    <div className="flex gap-2">
+                                        <button onClick={() => setIsEditingBank(false)} className="text-slate-400 hover:text-slate-600 text-xs font-bold uppercase">Cancel</button>
+                                        <button onClick={() => handleUpdateDetails('bank')} disabled={savingDetails} className="text-emerald-600 hover:text-emerald-700 text-xs font-bold uppercase disabled:opacity-50">Save</button>
+                                    </div>
+                                )}
+                            </div>
                             <div className="space-y-4">
                                 <div>
                                     <label className="text-xs font-semibold text-slate-500 uppercase tracking-wider">Account Holder</label>
-                                    <p className="text-sm text-slate-900 font-medium">{bank.accountName || 'N/A'}</p>
+                                    {isEditingBank ? (
+                                        <input type="text" value={tempBank.accountName || ''} onChange={(e) => setTempBank({ ...tempBank, accountName: e.target.value })} className="w-full mt-1 p-2 text-sm border rounded-lg focus:ring-2 focus:ring-blue-500" />
+                                    ) : (
+                                        <p className="text-sm text-slate-900 font-medium">{bank.accountName || 'N/A'}</p>
+                                    )}
                                 </div>
                                 <div>
                                     <label className="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1">Designation / Role</label>
                                     <p className="text-sm text-slate-900 font-medium bg-blue-50 px-3 py-1.5 rounded-lg inline-block text-blue-700 border border-blue-100">
                                         {personal.jobRole || 'Not Specified'}
                                     </p>
+                                    {isEditingPersonal && <p className="text-[10px] text-slate-400 mt-1 italic">Update in Personal Details above</p>}
                                 </div>
                                 <div>
-                                    <label className="text-xs font-semibold text-slate-500 uppercase tracking-wider">Bank & Branch</label>
-                                    <p className="text-sm text-slate-900 font-medium">{bank.bankName || 'N/A'}</p>
+                                    <label className="text-xs font-semibold text-slate-500 uppercase tracking-wider">Bank Name</label>
+                                    {isEditingBank ? (
+                                        <input type="text" value={tempBank.bankName || ''} onChange={(e) => setTempBank({ ...tempBank, bankName: e.target.value })} className="w-full mt-1 p-2 text-sm border rounded-lg focus:ring-2 focus:ring-blue-500" />
+                                    ) : (
+                                        <p className="text-sm text-slate-900 font-medium">{bank.bankName || 'N/A'}</p>
+                                    )}
                                 </div>
                                 <div>
                                     <label className="text-xs font-semibold text-slate-500 uppercase tracking-wider">Account Number</label>
-                                    <p className="text-sm text-slate-900 font-medium">{bank.accountNumber || 'N/A'}</p>
+                                    {isEditingBank ? (
+                                        <input type="text" value={tempBank.accountNumber || ''} onChange={(e) => setTempBank({ ...tempBank, accountNumber: e.target.value })} className="w-full mt-1 p-2 text-sm border rounded-lg focus:ring-2 focus:ring-blue-500" />
+                                    ) : (
+                                        <p className="text-sm text-slate-900 font-medium">{bank.accountNumber || 'N/A'}</p>
+                                    )}
                                 </div>
-                                <div>
-                                    <label className="text-xs font-semibold text-slate-500 uppercase tracking-wider">IFSC / PAN</label>
-                                    <p className="text-sm text-slate-900 font-medium">{bank.ifscCode} / {bank.panNumber}</p>
+                                <div className="grid grid-cols-2 gap-2">
+                                    <div>
+                                        <label className="text-xs font-semibold text-slate-500 uppercase tracking-wider">IFSC Code</label>
+                                        {isEditingBank ? (
+                                            <input type="text" value={tempBank.ifscCode || ''} onChange={(e) => setTempBank({ ...tempBank, ifscCode: e.target.value })} className="w-full mt-1 p-2 text-sm border rounded-lg focus:ring-2 focus:ring-blue-500" />
+                                        ) : (
+                                            <p className="text-sm text-slate-900 font-medium">{bank.ifscCode || 'N/A'}</p>
+                                        )}
+                                    </div>
+                                    <div>
+                                        <label className="text-xs font-semibold text-slate-500 uppercase tracking-wider">PAN Number</label>
+                                        {isEditingBank ? (
+                                            <input type="text" value={tempBank.panNumber || ''} onChange={(e) => setTempBank({ ...tempBank, panNumber: e.target.value })} className="w-full mt-1 p-2 text-sm border rounded-lg focus:ring-2 focus:ring-blue-500" />
+                                        ) : (
+                                            <p className="text-sm text-slate-900 font-medium">{bank.panNumber || 'N/A'}</p>
+                                        )}
+                                    </div>
                                 </div>
                             </div>
                         </div>
@@ -641,6 +796,10 @@ export default function CandidateDetail() {
                                     <div className="sm:col-span-2">
                                         <label className="block text-sm font-medium text-slate-700 mb-1">Employee Email Address</label>
                                         <input type="email" name="recipientEmail" value={offerForm.recipientEmail} onChange={handleOfferChange} required className="w-full rounded-lg border-slate-300 text-sm focus:ring-blue-500 focus:border-blue-500" placeholder="employee@example.com" />
+                                    </div>
+                                    <div className="sm:col-span-2">
+                                        <label className="block text-sm font-medium text-slate-700 mb-1">Employee ID (Optional)</label>
+                                        <input type="text" name="employeeId" value={offerForm.employeeId} onChange={handleOfferChange} className="w-full rounded-lg border-slate-300 text-sm focus:ring-blue-500 focus:border-blue-500" placeholder="e.g. FIC-2024-001" />
                                     </div>
                                 </div>
                             </form>

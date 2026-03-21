@@ -209,6 +209,7 @@ export const generateOfferLetter = async (candidate) => {
     drawRow("Role / Designation", offer.jobRole || 'Employee');
     const ctcLPA = (annualCTC / 100000).toFixed(2) + " LPA";
     drawRow("Annual CTC", ctcLPA);
+    drawRow("Employee ID", offer.employeeId || 'TBD');
     drawRow("Date of Joining", offer.joiningDate || 'Immediate');
     drawRow("Work Location", offer.location || 'Bangalore');
 
@@ -631,6 +632,7 @@ export const generateOfferLetterBase64 = async (candidate) => {
     drawRow("Role / Designation", offer.jobRole || 'Employee');
     const ctcLPA = (annualCTC / 100000).toFixed(2) + " LPA";
     drawRow("Annual CTC", ctcLPA);
+    drawRow("Employee ID", offer.employeeId || 'TBD');
     drawRow("Date of Joining", offer.joiningDate || 'Immediate');
     drawRow("Work Location", offer.location || 'Bangalore');
     currentY = gridY + 60;
