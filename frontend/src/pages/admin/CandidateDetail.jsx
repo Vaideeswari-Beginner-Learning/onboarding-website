@@ -635,10 +635,12 @@ export default function CandidateDetail() {
                                     )}
                                 </div>
                                 <div>
-                                    <label className="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1">Designation / Role</label>
-                                    <p className="text-sm text-slate-900 font-medium bg-blue-50 px-3 py-1.5 rounded-lg inline-block text-blue-700 border border-blue-100">
-                                        {personal.jobRole || 'Not Specified'}
-                                    </p>
+                                    <label className="text-xs font-semibold text-slate-500 uppercase tracking-wider">Designation / Role</label>
+                                    <div className="mt-1">
+                                        <span className="inline-flex items-center px-3 py-1.5 rounded-lg text-sm font-medium bg-blue-50 text-blue-700 border border-blue-100">
+                                            {personal.jobRole || 'Not Specified'}
+                                        </span>
+                                    </div>
                                     {isEditingPersonal && <p className="text-[10px] text-slate-400 mt-1 italic">Update in Personal Details above</p>}
                                 </div>
                                 <div>
