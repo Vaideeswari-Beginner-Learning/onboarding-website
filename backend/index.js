@@ -149,8 +149,8 @@ app.use((req, res, next) => {
 
 // Routes
 
-// Admin Login
-app.post('/api/auth/login', (req, res) => {
+// Unified Platform Login
+app.post('/api/auth/login', async (req, res) => {
     try {
         let { email, password } = req.body;
 
@@ -164,6 +164,7 @@ app.post('/api/auth/login', (req, res) => {
             (email === 'info@gmail.com' && password === 'Forgeindia@09') ||
             (email === 'admin@gmail.com' && password === 'admin');
 
+        // 1. Check Admin Credentials first
         if (isAdminUser) {
             const token = jwt.sign(
                 { id: 'ADMIN-001', email: email, role: 'admin' },
@@ -171,7 +172,7 @@ app.post('/api/auth/login', (req, res) => {
                 { expiresIn: '24h' }
             );
 
-            res.json({
+            return res.json({
                 token,
                 user: {
                     id: 'ADMIN-001',
@@ -180,10 +181,31 @@ app.post('/api/auth/login', (req, res) => {
                     role: 'admin'
                 }
             });
-        } else {
-            console.log('Credentials did not match.');
-            res.status(401).json({ message: 'Invalid Admin Credentials' });
         }
+
+        // 2. Check Candidate Credentials
+        const candidate = await Candidate.findOne({ email });
+        
+        if (candidate) {
+            // Validate Candidate password matches their registration
+            if (candidate.password !== password) {
+                console.log(`Invalid candidate password attempt for: ${email}`);
+                return res.status(401).json({ message: 'Invalid Email or Password' });
+            }
+
+            const token = jwt.sign(
+                { id: candidate.id, email: candidate.email, role: 'candidate' },
+                JWT_SECRET,
+                { expiresIn: '720h' } // 30 days for candidates
+            );
+
+            return res.json({ token, user: candidate });
+        }
+
+        // 3. Neither Admin nor Candidate
+        console.log(`No user found or credentials mismatched for: ${email}`);
+        res.status(401).json({ message: 'Invalid Email or Password' });
+
     } catch (error) {
         console.error('Login Route Error:', error);
         res.status(500).json({ message: 'Internal Server Error during login' });
@@ -196,40 +218,6 @@ app.post('/api/auth/otp/send', (req, res) => {
     console.log(`Sending OTP to ${email}`);
     // In a real app, send email/SMS here.
     res.json({ message: 'OTP sent successfully' });
-});
-
-// Candidate Direct Login (No OTP)
-app.post('/api/auth/candidate/login', async (req, res) => {
-    const { email } = req.body;
-    try {
-        // Check if candidate exists
-        let candidate = await Candidate.findOne({ email });
-
-        if (!candidate) {
-            // Auto-register if not found
-            candidate = new Candidate({
-                id: 'CAND-' + Math.random().toString(36).substr(2, 9),
-                name: email.split('@')[0], // Use default from email
-                email: email,
-                role: 'candidate',
-                status: 'Onboarding',
-                date: new Date().toISOString().split('T')[0],
-                documents: []
-            });
-            await candidate.save();
-        }
-
-        const token = jwt.sign(
-            { id: candidate.id, email: candidate.email, role: 'candidate' },
-            JWT_SECRET,
-            { expiresIn: '720h' } // 30 days for candidates
-        );
-
-        res.json({ token, user: candidate });
-    } catch (error) {
-        console.error('Candidate Login Error:', error);
-        res.status(500).json({ message: 'Server error during login' });
-    }
 });
 
 // Candidate Register

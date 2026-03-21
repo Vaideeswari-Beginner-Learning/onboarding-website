@@ -7,7 +7,7 @@ import { FileText, Upload, CheckSquare, Clock } from 'lucide-react';
 import { generateOfferLetter } from '../../utils/offerLetterGenerator';
 
 export default function CandidateDashboard() {
-    const { user, loginCandidate } = useAuth();
+    const { user } = useAuth();
 
     // Calculate current step based on completion
     const getStep = () => {
@@ -42,8 +42,7 @@ export default function CandidateDashboard() {
             });
             if (response.ok) {
                 alert('Offer Letter Requested Successfully!');
-                // Refresh user data
-                loginCandidate(user.email);
+                window.location.reload();
             } else {
                 alert('Failed to request offer letter.');
             }

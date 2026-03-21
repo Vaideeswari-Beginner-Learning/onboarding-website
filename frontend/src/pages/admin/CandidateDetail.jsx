@@ -401,10 +401,10 @@ export default function CandidateDetail() {
                             <div className="shrink-0 h-20 w-20 rounded-2xl bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center text-white text-3xl font-bold shadow-lg shadow-blue-200">
                                 {candidate.name?.charAt(0) || 'U'}
                             </div>
-                            <div>
-                                <h1 className="text-3xl font-extrabold text-slate-900 tracking-tight">{candidate.name}</h1>
-                                <p className="text-slate-500 font-medium mt-1">{candidate.role || 'Candidate'} • ID: {candidate._id?.slice(-6).toUpperCase()}</p>
-                                <div className="mt-3 flex gap-2">
+                            <div className="min-w-0 flex-1">
+                                <h1 className="text-3xl font-extrabold text-slate-900 tracking-tight truncate">{candidate.name}</h1>
+                                <p className="text-slate-500 font-medium mt-1 truncate">{candidate.role || 'Candidate'} • ID: {candidate._id?.slice(-6).toUpperCase()}</p>
+                                <div className="mt-3 flex flex-wrap gap-2">
                                     <span className={`px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider ${candidate.status === 'Verified' ? 'bg-green-100 text-green-700' :
                                         candidate.status === 'Rejected' ? 'bg-red-100 text-red-700' :
                                             'bg-blue-100 text-blue-700'

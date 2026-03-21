@@ -45,10 +45,10 @@ export const AuthProvider = ({ children }) => {
     }
 
 
-    const loginAdmin = async (email, password) => {
+    const login = async (email, password) => {
         try {
             const url = `${ACTUAL_API_BASE}/api/auth/login`;
-            console.log('--- API CALL START ---');
+            console.log('--- UNIFIED LOGIN START ---');
             console.log('URL:', url);
             console.log('Method: POST');
             const response = await fetch(url, {
@@ -79,7 +79,7 @@ export const AuthProvider = ({ children }) => {
                 localStorage.setItem('onboarding_token', data.token);
             }
             localStorage.setItem('onboarding_user', JSON.stringify(data.user));
-            return { success: true };
+            return { success: true, role: data.user.role };
         } catch (error) {
             console.error(error);
             alert(`LOGIN FAILED\nURL: ${url}\nError: ${error.message}`);
@@ -87,46 +87,7 @@ export const AuthProvider = ({ children }) => {
         }
     };
 
-    const loginCandidate = async (email) => {
-        const url = `${ACTUAL_API_BASE}/api/auth/candidate/login`;
-        try {
-            console.log('--- CANDIDATE LOGIN START ---');
-            console.log('URL:', url);
-            const response = await fetch(url, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ email }),
-            });
-            if (!response.ok) {
-                const text = await response.text();
-                console.error(`DEBUG: Candidate Login response not OK (${response.status}):`, text.substring(0, 100));
-                let errorData = {};
-                try {
-                    errorData = JSON.parse(text);
-                } catch (e) {
-                    throw new Error(`Server Error (${response.status}): ${text.includes('<!DOCTYPE html>') ? 'Received HTML instead of JSON' : text.substring(0, 50)}...`);
-                }
-                throw new Error(errorData.message || 'Login failed');
-            }
-            const text = await response.text();
-            let data;
-            try {
-                data = JSON.parse(text);
-            } catch (e) {
-                throw new Error("Invalid response from server. Please check backend deployment.");
-            }
-            setUser(data.user);
-            if (data.token) {
-                localStorage.setItem('onboarding_token', data.token);
-            }
-            localStorage.setItem('onboarding_user', JSON.stringify(data.user));
-            return { success: true };
-        } catch (error) {
-            console.error('Candidate Login Error:', error);
-            alert(`CANDIDATE LOGIN FAILED\nURL: ${url}\nError: ${error.message}`);
-            return { success: false, message: error.message };
-        }
-    };
+
 
     // Deprecated: OTP Functions (kept for reference if needed later, but unused)
     const sendOtp = async (email) => { return true; };
@@ -256,7 +217,7 @@ export const AuthProvider = ({ children }) => {
 
     return (
         <AuthContext.Provider value={{
-            user, loginAdmin, loginCandidate, sendOtp, verifyOtp, register, updateCandidate, logout, loading, submitOnboarding
+            user, login, sendOtp, verifyOtp, register, updateCandidate, logout: handleLogout, loading, submitOnboarding
         }}>
             {children}
         </AuthContext.Provider>
