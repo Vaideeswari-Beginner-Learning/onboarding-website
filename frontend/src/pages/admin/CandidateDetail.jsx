@@ -503,8 +503,8 @@ export default function CandidateDetail() {
                                     <p className="text-sm text-slate-900 font-medium">{bank.accountName || 'N/A'}</p>
                                 </div>
                                 <div>
-                                    <label className="text-xs font-semibold text-slate-500 uppercase tracking-wider">Designation / Role</label>
-                                    <p className="text-sm text-slate-900 font-medium bg-blue-50 px-2 py-1 rounded inline-block text-blue-700">
+                                    <label className="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1">Designation / Role</label>
+                                    <p className="text-sm text-slate-900 font-medium bg-blue-50 px-3 py-1.5 rounded-lg inline-block text-blue-700 border border-blue-100">
                                         {personal.jobRole || 'Not Specified'}
                                     </p>
                                 </div>
