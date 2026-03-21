@@ -452,12 +452,32 @@ export default function CandidateDetail() {
                             </h3>
                             <div className="space-y-4">
                                 <div>
+                                    <label className="text-xs font-semibold text-slate-500 uppercase tracking-wider">Full Name</label>
+                                    <p className="text-sm text-slate-900 font-medium">{personal.firstName ? `${personal.firstName} ${personal.lastName}` : candidate.name}</p>
+                                </div>
+                                <div>
                                     <label className="text-xs font-semibold text-slate-500 uppercase tracking-wider">Email</label>
                                     <p className="text-sm text-slate-900 font-medium break-words">{candidate.email}</p>
                                 </div>
                                 <div>
                                     <label className="text-xs font-semibold text-slate-500 uppercase tracking-wider">Phone</label>
                                     <p className="text-sm text-slate-900 font-medium">{personal.phone || 'N/A'}</p>
+                                </div>
+                                <div>
+                                    <label className="text-xs font-semibold text-slate-500 uppercase tracking-wider">Date of Birth</label>
+                                    <p className="text-sm text-slate-900 font-medium">{personal.dob || 'N/A'}</p>
+                                </div>
+                                <div>
+                                    <label className="text-xs font-semibold text-slate-500 uppercase tracking-wider">Gender</label>
+                                    <p className="text-sm text-slate-900 font-medium capitalize">{personal.gender || 'N/A'}</p>
+                                </div>
+                                <div>
+                                    <label className="text-xs font-semibold text-slate-500 uppercase tracking-wider">Father's Name</label>
+                                    <p className="text-sm text-slate-900 font-medium">{personal.fatherName || 'N/A'}</p>
+                                </div>
+                                <div>
+                                    <label className="text-xs font-semibold text-slate-500 uppercase tracking-wider">Job Role</label>
+                                    <p className="text-sm text-slate-900 font-medium">{personal.jobRole || 'N/A'}</p>
                                 </div>
                                 <div>
                                     <label className="text-xs font-semibold text-slate-500 uppercase tracking-wider">Address</label>
