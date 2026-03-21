@@ -56,14 +56,14 @@ export default function CandidateDashboard() {
         <div className="min-h-screen bg-slate-50">
             <Navbar />
 
-            <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
+            <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 md:py-10">
                 <div className="mb-8">
                     <h1 className="text-3xl font-bold text-slate-900">Welcome, {user?.name}</h1>
                     <p className="mt-2 text-slate-600">Complete your onboarding tasks to get started.</p>
                 </div>
 
                 {/* Status Tracker */}
-                <div className="bg-white p-5 md:p-6 rounded-2xl shadow-sm border border-slate-100 mb-8">
+                <div className="bg-white p-4 md:p-6 rounded-2xl shadow-sm border border-slate-100 mb-8">
                     <h2 className="text-lg font-semibold text-slate-900 mb-4">Onboarding Progress</h2>
                     <StatusTracker currentStep={currentStep} />
                 </div>
@@ -71,7 +71,7 @@ export default function CandidateDashboard() {
                 {/* Action Cards */}
                 {/* Action Cards */}
                 {/* Action Cards */}
-                <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
+                <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-5 md:gap-8">
 
                     {/* Personal Details Card */}
                     <Link to="/onboarding/personal-details" className="group">
@@ -79,7 +79,7 @@ export default function CandidateDashboard() {
                             ? 'bg-gradient-to-br from-violet-600 to-indigo-600 shadow-indigo-500/20 hover:shadow-indigo-500/30'
                             : 'bg-white border-2 border-blue-100 hover:border-blue-300 shadow-blue-200/20'
                             }`}>
-                            <div className={`rounded-[22px] p-6 md:p-8 h-full relative overflow-hidden transition-colors ${localStorage.getItem('onboarding_personal_details') ? 'bg-white/10' : 'bg-white'
+                            <div className={`rounded-[22px] p-5 md:p-8 h-full relative overflow-hidden transition-colors ${localStorage.getItem('onboarding_personal_details') ? 'bg-white/10' : 'bg-white'
                                 }`}>
                                 <div className="absolute top-0 right-0 p-4 opacity-5 group-hover:opacity-10 transition-opacity">
                                     <FileText className={`w-32 h-32 ${localStorage.getItem('onboarding_personal_details') ? 'text-white' : 'text-blue-600'
@@ -114,7 +114,7 @@ export default function CandidateDashboard() {
                                 ? 'bg-gradient-to-br from-pink-500 to-rose-500 shadow-pink-500/20 hover:shadow-pink-500/30'
                                 : 'bg-white border-2 border-pink-100 hover:border-pink-300 shadow-pink-200/20'
                                 }`}>
-                                <div className={`rounded-[22px] p-6 md:p-8 h-full relative overflow-hidden transition-colors ${localStorage.getItem('onboarding_bank_details') ? 'bg-white/10' : 'bg-white'
+                                <div className={`rounded-[22px] p-5 md:p-8 h-full relative overflow-hidden transition-colors ${localStorage.getItem('onboarding_bank_details') ? 'bg-white/10' : 'bg-white'
                                     }`}>
                                     <div className="absolute top-0 right-0 p-4 opacity-5 group-hover:opacity-10 transition-opacity">
                                         <FileText className={`w-32 h-32 ${localStorage.getItem('onboarding_bank_details') ? 'text-white' : 'text-pink-500'
@@ -144,7 +144,7 @@ export default function CandidateDashboard() {
                     ) : (
                         <div className="group h-full opacity-50 cursor-not-allowed">
                             <div className="bg-slate-200 p-1 rounded-3xl h-full">
-                                <div className="bg-white rounded-[22px] p-8 h-full relative overflow-hidden">
+                                <div className="bg-white rounded-[22px] p-5 md:p-8 h-full relative overflow-hidden">
                                     <div className="w-14 h-14 bg-slate-400 rounded-2xl flex items-center justify-center mb-6">
                                         <Clock className="w-7 h-7 text-white" />
                                     </div>
@@ -162,7 +162,7 @@ export default function CandidateDashboard() {
                                 ? 'bg-gradient-to-br from-amber-400 to-orange-500 shadow-orange-500/20 hover:shadow-orange-500/30'
                                 : 'bg-white border-2 border-orange-100 hover:border-orange-300 shadow-orange-200/20'
                                 }`}>
-                                <div className={`rounded-[22px] p-6 md:p-8 h-full relative overflow-hidden transition-colors ${localStorage.getItem('candidate_docs') ? 'bg-white/10' : 'bg-white'
+                                <div className={`rounded-[22px] p-5 md:p-8 h-full relative overflow-hidden transition-colors ${localStorage.getItem('candidate_docs') ? 'bg-white/10' : 'bg-white'
                                     }`}>
                                     <div className="absolute top-0 right-0 p-4 opacity-5 group-hover:opacity-10 transition-opacity">
                                         <Upload className={`w-32 h-32 ${localStorage.getItem('candidate_docs') ? 'text-white' : 'text-orange-500'

@@ -386,7 +386,7 @@ export default function CandidateDetail() {
         <div className="min-h-screen bg-slate-50 relative">
             <Navbar />
 
-            <main className={`max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-10 transition-all ${showDonePopup || showChat || showOfferModal ? 'blur-sm brightness-50' : ''}`}>
+            <main className={`max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-6 md:py-10 transition-all ${showDonePopup || showChat || showOfferModal ? 'blur-sm brightness-50' : ''}`}>
                 <button
                     onClick={() => navigate('/admin/dashboard')}
                     className="flex items-center text-slate-500 hover:text-blue-600 mb-6 transition-colors"
@@ -448,7 +448,7 @@ export default function CandidateDetail() {
                 )}
 
                 {/* Header */}
-                <div className="bg-white rounded-2xl md:rounded-3xl shadow-sm border border-slate-100 p-5 md:p-8 mb-8 relative overflow-hidden">
+                <div className="bg-white rounded-2xl md:rounded-3xl shadow-sm border border-slate-100 p-4 md:p-8 mb-6 md:mb-8 relative overflow-hidden">
                     <div className="absolute top-0 right-0 w-64 h-64 bg-blue-500/5 rounded-full -mr-32 -mt-32 blur-3xl"></div>
                     <div className="relative z-10 md:flex justify-between items-center">
                         <div className="flex gap-6 items-center">
@@ -497,9 +497,9 @@ export default function CandidateDetail() {
                     </div>
                 </div>
 
-                <div className="grid md:grid-cols-3 gap-6">
-                    <div className="md:col-span-1 space-y-6">
-                        <div className="bg-white rounded-2xl shadow-sm border border-slate-100 p-5 md:p-6">
+                <div className="grid md:grid-cols-3 gap-4 md:gap-6">
+                    <div className="md:col-span-1 space-y-4 md:space-y-6">
+                        <div className="bg-white rounded-2xl shadow-sm border border-slate-100 p-4 md:p-6">
                             <div className="flex justify-between items-center mb-4">
                                 <h3 className="text-lg font-bold text-slate-900 flex items-center">
                                     <User className="w-5 h-5 mr-2 text-slate-500" />
@@ -681,8 +681,8 @@ export default function CandidateDetail() {
                         </div>
                     </div>
 
-                    <div className="md:col-span-2 space-y-6">
-                        <div className="bg-white rounded-2xl shadow-sm border border-slate-100 p-5 md:p-6">
+                    <div className="md:col-span-2 space-y-4 md:space-y-6">
+                        <div className="bg-white rounded-2xl shadow-sm border border-slate-100 p-4 md:p-6">
                             <h3 className="text-lg font-bold text-slate-900 mb-6 flex items-center">
                                 <FileText className="w-5 h-5 mr-2 text-slate-500" />
                                 Submitted Documents

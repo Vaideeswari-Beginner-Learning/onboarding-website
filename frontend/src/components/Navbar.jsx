@@ -22,7 +22,7 @@ export default function Navbar() {
                         <div className="bg-blue-600 p-1.5 rounded-lg hidden">
                             <Building2 className="w-6 h-6 text-white" />
                         </div>
-                        <span className="text-xl font-bold bg-gradient-to-r from-blue-900 to-blue-700 bg-clip-text text-transparent">
+                        <span className="text-lg sm:text-xl font-bold bg-gradient-to-r from-blue-900 to-blue-700 bg-clip-text text-transparent truncate max-w-[150px] sm:max-w-none px-1">
                             Forge India Connect
                         </span>
                     </Link>

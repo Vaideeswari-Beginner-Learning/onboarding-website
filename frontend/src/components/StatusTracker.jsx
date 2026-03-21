@@ -48,7 +48,7 @@ export default function StatusTracker({ currentStep = 2 }) {
 
                     return (
                         <div key={step.id} className="flex flex-col items-center z-10">
-                            <div className={`w-10 h-10 rounded-full flex items-center justify-center border-2 transition-all duration-300 ${bgClass}`}>
+                            <div className={`w-9 h-9 sm:w-10 sm:h-10 rounded-full flex items-center justify-center border-2 transition-all duration-300 ${bgClass}`}>
                                 {icon}
                             </div>
                             <span className={`mt-2 text-xs sm:text-sm font-medium transition-colors duration-300 ${colorClass} hidden sm:block`}>
