@@ -96,6 +96,8 @@ export default function PersonalDetails() {
                                          className="w-full rounded-xl border-slate-200 focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/10 shadow-sm p-3.5 bg-white transition-all"
                                          value={formData.firstName}
                                          onChange={handleChange}
+                                         pattern="^[A-Za-z\s]{3,50}$"
+                                         title="First name must be between 3 and 50 characters, containing only alphabets and spaces. No numbers or special characters allowed."
                                      />
                                  </div>
                                  <div>
@@ -108,6 +110,8 @@ export default function PersonalDetails() {
                                          className="w-full rounded-xl border-slate-200 focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/10 shadow-sm p-3.5 bg-white transition-all"
                                          value={formData.fatherName}
                                          onChange={handleChange}
+                                         pattern="^[A-Za-z\s]{3,50}$"
+                                         title="Father's name must be between 3 and 50 characters, containing only alphabets and spaces."
                                      />
                                  </div>
                                  <div>
@@ -120,6 +124,8 @@ export default function PersonalDetails() {
                                          className="w-full rounded-xl border-slate-200 focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/10 shadow-sm p-3.5 bg-white transition-all"
                                          value={formData.lastName}
                                          onChange={handleChange}
+                                         pattern="^[A-Za-z\s]{1,50}$"
+                                         title="Last name must contain only alphabets and spaces."
                                      />
                                  </div>
                                  <div>

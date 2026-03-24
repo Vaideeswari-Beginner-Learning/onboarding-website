@@ -104,6 +104,8 @@ export default function BankDetails() {
                                              className="focus:ring-indigo-500 focus:border-indigo-500 block w-full pl-10 sm:text-sm border-slate-300 rounded-xl"
                                             value={formData.accountNumber}
                                             onChange={handleChange}
+                                            pattern="^[0-9]{9,18}$"
+                                            title="Account number must be 9 to 18 digits. Only numbers allowed."
                                         />
                                     </div>
                                 </div>
@@ -121,6 +123,8 @@ export default function BankDetails() {
                                             value={formData.ifscCode}
                                             onChange={handleChange}
                                             placeholder="SBIN0001234"
+                                            pattern="^[A-Za-z]{4}0[A-Za-z0-9]{6}$"
+                                            title="IFSC code must be 11 characters: 4 letters, then 0, then 6 alphanumeric characters (e.g., SBIN0001234)."
                                         />
                                     </div>
                                 </div>
@@ -140,10 +144,18 @@ export default function BankDetails() {
                             </div>
                         </section>
 
-                        <div className="pt-4 flex justify-end">
+                        <div className="pt-8 flex justify-between items-center mt-4">
+                             <button
+                                 type="button"
+                                 onClick={() => navigate('/onboarding/personal-details')}
+                                 className="px-6 py-3 border-2 border-slate-200 text-slate-600 font-bold rounded-xl hover:bg-slate-50 transition-colors flex items-center"
+                             >
+                                 <ArrowLeft className="w-5 h-5 mr-2" />
+                                 Back
+                             </button>
                              <button
                                  type="submit"
-                                 className="btn-indigo tracking-tight"
+                                 className="btn-indigo tracking-tight px-8"
                              >
                                  <Save className="w-5 h-5 mr-2" />
                                  Save & Continue

@@ -81,17 +81,37 @@ function DocumentUploadContent() {
     const handleFileSelect = (docId, file) => {
         if (!file) return;
 
-        // --- Validation Logic ---
+        // --- Strict File Type Validation ---
         const fileName = file.name.toLowerCase();
+        const fileType = file.type.toLowerCase();
+        const allowedTypes = ['application/pdf', 'image/jpeg', 'image/jpg', 'image/png'];
+        const allowedExtensions = ['.pdf', '.jpg', '.jpeg', '.png'];
+        const fileExtension = '.' + fileName.split('.').pop();
+
+        // 1. Validate file type (PDF or Image only)
+        if (!allowedTypes.includes(fileType) && !allowedExtensions.includes(fileExtension)) {
+            alert(`⚠️ Invalid File Type!\n\nOnly PDF and Image files (PDF, JPG, PNG) are accepted.\n\nYou uploaded: ${file.name}`);
+            return;
+        }
+
+        // 2. Validate Aadhaar filename
         if (docId === 'aadhaar' && !fileName.includes('aadhaar')) {
             alert("⚠️ Invalid File: Please upload a valid Aadhaar Card.\nThe filename must contain 'aadhaar' (e.g., 'my_aadhaar.pdf').");
             return;
         }
+
+        // 3. Validate PAN filename
         if (docId === 'pan' && !fileName.includes('pan')) {
-            alert("⚠️ Invalid File: Please upload a valid PAN Card.\nThe filename must contain 'pan' (e.g., 'pan_card.jpg').");
+            alert("⚠️ Invalid File: Please upload a valid PAN Card.\nThe filename must contain 'pan' (e.g., 'pan_card.pdf').");
             return;
         }
-        // ------------------------
+
+        // 4. Validate file size (max 5MB)
+        if (file.size > 5 * 1024 * 1024) {
+            alert(`⚠️ File Too Large!\n\nMaximum file size is 5MB.\nYour file: ${(file.size / (1024 * 1024)).toFixed(2)} MB`);
+            return;
+        }
+        // --- End Validation ---
 
         // Convert to Base64
         const reader = new FileReader();
@@ -189,12 +209,20 @@ function DocumentUploadContent() {
             <Navbar />
 
             <main className={`max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-10 transition-all ${showThankYouPopup ? 'blur-sm brightness-50 pointer-events-none' : ''}`}>
-                <button
-                    onClick={() => setIsFresher(null)}
-                    className="flex items-center text-slate-500 hover:text-blue-600 mb-6 transition-colors"
-                >
-                    <ArrowLeft className="w-4 h-4 mr-1" /> Change Experience Level
-                </button>
+                <div className="flex items-center justify-between mb-6">
+                    <button
+                        onClick={() => navigate('/onboarding/bank-details')}
+                        className="flex items-center px-5 py-2.5 border-2 border-slate-200 text-slate-600 font-bold rounded-xl hover:bg-slate-50 transition-colors"
+                    >
+                        <ArrowLeft className="w-4 h-4 mr-1" /> Back to Bank Details
+                    </button>
+                    <button
+                        onClick={() => setIsFresher(null)}
+                        className="flex items-center text-slate-400 hover:text-indigo-600 text-sm font-medium transition-colors"
+                    >
+                        Change Experience Level
+                    </button>
+                </div>
 
                 <div className="mb-10 slide-up">
                     <StatusTracker currentStep={4} />
@@ -278,6 +306,7 @@ function DocumentUploadContent() {
                                                     type="file"
                                                     id={`file-${doc.id}`}
                                                     className="hidden"
+                                                    accept=".pdf,.jpg,.jpeg,.png"
                                                     onChange={(e) => handleFileSelect(doc.id, e.target.files[0])}
                                                 />
                                                  <label
