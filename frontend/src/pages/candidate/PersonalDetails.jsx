@@ -96,8 +96,8 @@ export default function PersonalDetails() {
                                          className="w-full rounded-xl border-slate-200 focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/10 shadow-sm p-3.5 bg-white transition-all"
                                          value={formData.firstName}
                                          onChange={handleChange}
-                                         pattern="^[A-Za-z\s]{3,50}$"
-                                         title="First name must be between 3 and 50 characters, containing only alphabets and spaces. No numbers or special characters allowed."
+                                         pattern="^[A-Za-z][A-Za-z\s.]{2,49}$"
+                                         title="Name must start with a letter and be 3-50 characters. Only letters, spaces and dots allowed (e.g. Vaideeswari.V)."
                                      />
                                  </div>
                                  <div>
@@ -110,8 +110,8 @@ export default function PersonalDetails() {
                                          className="w-full rounded-xl border-slate-200 focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/10 shadow-sm p-3.5 bg-white transition-all"
                                          value={formData.fatherName}
                                          onChange={handleChange}
-                                         pattern="^[A-Za-z\s]{3,50}$"
-                                         title="Father's name must be between 3 and 50 characters, containing only alphabets and spaces."
+                                         pattern="^[A-Za-z][A-Za-z\s.]{2,49}$"
+                                         title="Name must start with a letter and be 3-50 characters. Only letters, spaces and dots allowed."
                                      />
                                  </div>
                                  <div>
@@ -124,8 +124,8 @@ export default function PersonalDetails() {
                                          className="w-full rounded-xl border-slate-200 focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/10 shadow-sm p-3.5 bg-white transition-all"
                                          value={formData.lastName}
                                          onChange={handleChange}
-                                         pattern="^[A-Za-z\s]{1,50}$"
-                                         title="Last name must contain only alphabets and spaces."
+                                         pattern="^[A-Za-z][A-Za-z\s.]{0,49}$"
+                                         title="Last name must start with a letter. Only letters, spaces and dots allowed."
                                      />
                                  </div>
                                  <div>
