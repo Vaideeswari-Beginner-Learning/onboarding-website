@@ -10,7 +10,7 @@ import DocumentUpload from './pages/candidate/DocumentUpload';
 import AdminDashboard from './pages/admin/AdminDashboard';
 import CandidateDetail from './pages/admin/CandidateDetail';
 import AddCandidate from './pages/admin/AddCandidate';
-import OfferLetter from './pages/admin/OfferLetter';
+
 import OnboardingComplete from './pages/candidate/OnboardingComplete';
 import ChatSupport from './components/ChatSupport';
 import AdminChat from './pages/admin/AdminChat';
@@ -69,11 +69,7 @@ function App() {
                 <AddCandidate />
               </ProtectedRoute>
             } />
-            <Route path="/admin/offer-letter/:id" element={
-              <ProtectedRoute adminOnly>
-                <OfferLetter />
-              </ProtectedRoute>
-            } />
+
             <Route path="/admin/chat" element={
               <ProtectedRoute adminOnly>
                 <AdminChat />

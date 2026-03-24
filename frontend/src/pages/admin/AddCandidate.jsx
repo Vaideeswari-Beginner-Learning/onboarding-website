@@ -25,17 +25,17 @@ export default function AddCandidate() {
     };
 
     return (
-        <div className="min-h-screen bg-slate-50">
+        <div className="min-h-screen bg-indigo-50/30 fade-in">
             <Navbar />
 
             <main className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
-                <h1 className="text-2xl font-bold text-slate-900 mb-6">Invite New Candidate</h1>
+                <h1 className="text-3xl font-extrabold text-slate-900 mb-8 tracking-tight">Invite New Employee</h1>
 
-                <div className="bg-white rounded-2xl shadow-sm border border-slate-100 p-8">
+                <div className="premium-card p-8 md:p-10 slide-up">
                     <form onSubmit={handleSubmit} className="space-y-6">
 
                         <div>
-                            <label className="block text-sm font-medium text-slate-700 mb-1">Candidate Name</label>
+                             <label className="block text-sm font-bold text-slate-700 mb-2 uppercase tracking-wide">Employee Name</label>
                             <div className="relative rounded-md shadow-sm">
                                 <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
                                     <UserPlus className="h-5 w-5 text-slate-400" />
@@ -126,12 +126,12 @@ export default function AddCandidate() {
                         </div>
 
                         <div className="pt-4">
-                            <button
-                                type="submit"
-                                className="w-full flex justify-center py-3 px-4 border border-transparent rounded-lg shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors"
-                            >
-                                Send Onboarding Link
-                            </button>
+                             <button
+                                 type="submit"
+                                 className="w-full flex justify-center py-4 px-6 border border-transparent rounded-2xl shadow-xl text-base font-bold text-white bg-indigo-600 hover:bg-indigo-700 shadow-indigo-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition-all hover:scale-[1.02] active:scale-[0.98]"
+                             >
+                                 Send Onboarding Link
+                             </button>
                         </div>
                     </form>
                 </div>

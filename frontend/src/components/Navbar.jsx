@@ -19,10 +19,10 @@ export default function Navbar() {
                 <div className="flex justify-between h-16 items-center">
                     <Link to="/" className="flex items-center gap-2">
                         <img src="/logo.jpg" alt="Logo" className="h-10 w-auto object-contain" onError={(e) => { e.target.style.display = 'none'; e.target.nextSibling.style.display = 'block'; }} />
-                        <div className="bg-blue-600 p-1.5 rounded-lg hidden">
+                        <div className="bg-indigo-600 p-1.5 rounded-lg hidden">
                             <Building2 className="w-6 h-6 text-white" />
                         </div>
-                        <span className="text-lg sm:text-xl font-bold bg-gradient-to-r from-blue-900 to-blue-700 bg-clip-text text-transparent truncate max-w-[150px] sm:max-w-none px-1">
+                        <span className="text-lg sm:text-xl font-bold bg-gradient-to-r from-indigo-900 to-indigo-700 bg-clip-text text-transparent truncate max-w-[150px] sm:max-w-none px-1">
                             Forge India Connect
                         </span>
                     </Link>
@@ -32,17 +32,17 @@ export default function Navbar() {
                         <div className="hidden md:flex items-center gap-4">
                             {user ? (
                                 <>
-                                    <div className="flex items-center space-x-4">
-                                        <span onClick={() => navigate(user.role === 'admin' ? '/admin/dashboard' : '/dashboard')} className="cursor-pointer text-slate-600 hover:text-blue-600 transition-colors font-medium">Dashboard</span>
-                                        {user.role === 'admin' && (
-                                            <span onClick={() => navigate('/admin/chat')} className="cursor-pointer text-slate-600 hover:text-blue-600 transition-colors font-medium">Messages</span>
-                                        )}
-                                        <div className="h-4 w-px bg-slate-300"></div>
-                                    </div>
+                                     <div className="flex items-center space-x-4">
+                                         <span onClick={() => navigate(user.role === 'admin' ? '/admin/dashboard' : '/dashboard')} className="cursor-pointer text-slate-600 hover:text-indigo-600 transition-colors font-medium">Dashboard</span>
+                                         {user.role === 'admin' && (
+                                             <span onClick={() => navigate('/admin/chat')} className="cursor-pointer text-slate-600 hover:text-indigo-600 transition-colors font-medium">Messages</span>
+                                         )}
+                                         <div className="h-4 w-px bg-slate-300"></div>
+                                     </div>
                                     <div className="flex items-center gap-2 text-slate-600">
-                                        <div className="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center border border-blue-200 shadow-inner">
-                                            <User className="w-4 h-4 text-blue-600" />
-                                        </div>
+                                     <div className="w-8 h-8 bg-indigo-100 rounded-full flex items-center justify-center border border-indigo-200 shadow-inner">
+                                         <User className="w-4 h-4 text-indigo-600" />
+                                     </div>
                                         <span className="font-medium text-slate-700">{user.name || (user.role === 'admin' ? 'Admin' : 'User')}</span>
                                     </div>
                                     <button
@@ -56,18 +56,18 @@ export default function Navbar() {
                                 </>
                             ) : (
                                 <div className="flex items-center gap-3">
-                                    <Link
-                                        to="/login"
-                                        className="text-slate-600 hover:text-blue-600 font-medium px-3 py-2 transition-colors"
-                                    >
-                                        Login
-                                    </Link>
-                                    <Link
-                                        to="/register"
-                                        className="bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white px-5 py-2.5 rounded-xl font-bold transition-all shadow-lg shadow-blue-600/20 hover:shadow-blue-600/40 hover:-translate-y-0.5"
-                                    >
-                                        Get Started
-                                    </Link>
+                                     <Link
+                                         to="/login"
+                                         className="text-slate-600 hover:text-indigo-600 font-medium px-3 py-2 transition-colors"
+                                     >
+                                         Login
+                                     </Link>
+                                     <Link
+                                         to="/register"
+                                         className="bg-indigo-600 hover:bg-indigo-700 text-white px-5 py-2.5 rounded-xl font-bold transition-all shadow-lg shadow-indigo-200 hover:shadow-indigo-300 hover:-translate-y-0.5 active:scale-95"
+                                     >
+                                         Get Started
+                                     </Link>
                                 </div>
                             )}
                         </div>
@@ -98,10 +98,10 @@ export default function Navbar() {
                                         <div className="text-xs text-slate-500 font-medium uppercase tracking-wider">{user.role}</div>
                                     </div>
                                 </div>
-                                <span onClick={() => { setIsMobileMenuOpen(false); navigate(user.role === 'admin' ? '/admin/dashboard' : '/dashboard'); }} className="cursor-pointer text-slate-700 hover:text-blue-600 hover:bg-blue-50 font-semibold px-4 py-3 rounded-xl transition-colors flex items-center">Dashboard</span>
-                                {user.role === 'admin' && (
-                                    <span onClick={() => { setIsMobileMenuOpen(false); navigate('/admin/chat'); }} className="cursor-pointer text-slate-700 hover:text-blue-600 hover:bg-blue-50 font-semibold px-4 py-3 rounded-xl transition-colors flex items-center">Messages</span>
-                                )}
+                                 <span onClick={() => { setIsMobileMenuOpen(false); navigate(user.role === 'admin' ? '/admin/dashboard' : '/dashboard'); }} className="cursor-pointer text-slate-700 hover:text-indigo-600 hover:bg-indigo-50 font-semibold px-4 py-3 rounded-xl transition-colors flex items-center">Dashboard</span>
+                                 {user.role === 'admin' && (
+                                     <span onClick={() => { setIsMobileMenuOpen(false); navigate('/admin/chat'); }} className="cursor-pointer text-slate-700 hover:text-indigo-600 hover:bg-indigo-50 font-semibold px-4 py-3 rounded-xl transition-colors flex items-center">Messages</span>
+                                 )}
                                 <button
                                     onClick={() => { setIsMobileMenuOpen(false); handleLogout(); }}
                                     className="flex items-center gap-2 text-red-600 hover:bg-red-50 font-semibold px-4 py-3 rounded-xl transition-colors w-full text-left"

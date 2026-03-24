@@ -2,8 +2,7 @@ import { useState, useEffect, useRef } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { useAuth, API_BASE } from '../../context/AuthContext';
 import Navbar from '../../components/Navbar';
-import { ArrowLeft, Download, CheckCircle, XCircle, FileText, User, Eye, PartyPopper, Mail, Loader2, AlertCircle, Settings, Key } from 'lucide-react';
-import { generateOfferLetter, generateOfferLetterBase64 } from '../../utils/offerLetterGenerator';
+import { ArrowLeft, Download, CheckCircle, XCircle, FileText, User, Eye, PartyPopper, Settings, Clock } from 'lucide-react';
 import JSZip from 'jszip';
 import { saveAs } from 'file-saver';
 
@@ -14,10 +13,6 @@ export default function CandidateDetail() {
     const [candidate, setCandidate] = useState(null);
     const [loading, setLoading] = useState(true);
     const [showDonePopup, setShowDonePopup] = useState(false);
-    const [sendingEmail, setSendingEmail] = useState(false);
-    const [targetEmail, setTargetEmail] = useState('');
-    const [setupEmail, setSetupEmail] = useState('vaideeswari8@gmail.com');
-    const [savingSetup, setSavingSetup] = useState(false);
     const [appBaseUrl, setAppBaseUrl] = useState(localStorage.getItem('appBaseUrl') || window.location.origin);
 
     // --- Chat Hooks ---
@@ -25,12 +20,7 @@ export default function CandidateDetail() {
     const [messages, setMessages] = useState([]);
     const [chatInput, setChatInput] = useState('');
     const [suggestedUrl, setSuggestedUrl] = useState('');
-    const [mailerStatus, setMailerStatus] = useState({ configured: false, user: '', service: 'gmail' });
     const [showSettingsModal, setShowSettingsModal] = useState(false);
-    const [emailSettings, setEmailSettings] = useState({ email: '', password: '', service: 'gmail' });
-    const [testingConnection, setTestingConnection] = useState(false);
-    const [savingSettings, setSavingSettings] = useState(false);
-    const [testResult, setTestResult] = useState(null);
     const chatEndRef = useRef(null);
 
     // --- Edit Mode States ---
@@ -78,20 +68,6 @@ export default function CandidateDetail() {
                         if (appBaseUrl.includes('localhost')) {
                             setAppBaseUrl(data.suggestedUrl);
                             localStorage.setItem('appBaseUrl', data.suggestedUrl);
-                        }
-                    }
-                    if (data.mailerConfigured !== undefined) {
-                        setMailerStatus({
-                            configured: data.mailerConfigured,
-                            user: data.mailerUser,
-                            service: data.mailerService || 'gmail'
-                        });
-                        if (data.mailerUser && data.mailerUser !== 'Not Configured') {
-                            setEmailSettings(prev => ({
-                                ...prev,
-                                email: data.mailerUser,
-                                service: data.mailerService || 'gmail'
-                            }));
                         }
                     }
                 }
@@ -160,39 +136,11 @@ export default function CandidateDetail() {
         }
     };
 
-    // --- Offer Letter Modal State ---
-    const [showOfferModal, setShowOfferModal] = useState(false);
-    const [offerForm, setOfferForm] = useState({
-        employeeName: '',
-        adminName: 'HR Manager',
-        jobRole: '',
-        ctc: '',
-        companyName: 'Forge India Connect',
-        location: 'Bangalore',
-        joiningDate: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
-        responsibilities: '',
-        companyAddress: '123 Tech Park, Innovation Street, Bangalore, Karnataka - 560001',
-        recipientEmail: '',
-        employeeId: ''
-    });
 
-    useEffect(() => {
-        if (candidate) {
-            setOfferForm(prev => ({
-                ...prev,
-                employeeName: candidate.name,
-                recipientEmail: candidate.email,
-                jobRole: candidate.personalDetails?.jobRole || prev.jobRole,
-                employeeId: candidate.id || ''
-            }));
-            setTargetEmail(candidate.email);
-        }
-    }, [candidate]);
 
-    const handleOfferChange = (e) => {
-        const { name, value } = e.target;
-        setOfferForm(prev => ({ ...prev, [name]: value }));
-    };
+
+
+
 
     const getStableBaseUrl = (rawUrl) => {
         if (!rawUrl) return window.location.origin.replace(':5173', ':5000');
@@ -239,86 +187,9 @@ export default function CandidateDetail() {
         }
     };
 
-    const handlePrepareOffer = async (e) => {
-        if (e) e.preventDefault();
-        try {
-            const token = localStorage.getItem('onboarding_token');
-            const response = await fetch(`${API_BASE}/api/admin/generate-offer`, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${token}`
-                },
-                body: JSON.stringify({
-                    candidateId: candidate._id,
-                    offerDetails: offerForm
-                })
-            });
 
-            if (response.ok) {
-                setShowOfferModal(false);
-                generateOfferLetter({ ...candidate, offerDetails: offerForm });
-                setCandidate(prev => ({ ...prev, offerLetterStatus: 'Generated' }));
-                alert("✅ Offer Letter Generated & Downloaded Successfully!");
-            } else {
-                alert("❌ Failed to save offer details on server.");
-            }
-        } catch (error) {
-            console.error("Error saving offer details:", error);
-            alert("❌ System Error: Unable to save details.");
-        }
-    };
 
-    const handleTestConnection = async (e) => {
-        e.preventDefault();
-        setTestingConnection(true);
-        setTestResult(null);
-        try {
-            const token = localStorage.getItem('onboarding_token');
-            const response = await fetch(`${API_BASE}/api/admin/test-email-connection`, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${token}`
-                },
-                body: JSON.stringify(emailSettings)
-            });
-            const data = await response.json();
-            setTestResult({ success: response.ok, message: data.message });
-        } catch (error) {
-            setTestResult({ success: false, message: 'Connection failed. Check your network.' });
-        } finally {
-            setTestingConnection(false);
-        }
-    };
 
-    const handleSaveSettings = async (e) => {
-        e.preventDefault();
-        setSavingSettings(true);
-        try {
-            const token = localStorage.getItem('onboarding_token');
-            const response = await fetch(`${API_BASE}/api/admin/update-email-setup`, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${token}`
-                },
-                body: JSON.stringify(emailSettings)
-            });
-            const data = await response.json();
-            if (response.ok) {
-                alert('✅ Settings saved successfully!');
-                setShowSettingsModal(false);
-                setMailerStatus({ configured: true, user: emailSettings.email });
-            } else {
-                alert(`❌ Failed to save: ${data.message}`);
-            }
-        } catch (error) {
-            alert('❌ System Error: Unable to save settings.');
-        } finally {
-            setSavingSettings(false);
-        }
-    };
 
     const handleEditPersonal = () => {
         setTempPersonal({ ...candidate.personalDetails });
@@ -386,7 +257,7 @@ export default function CandidateDetail() {
         <div className="min-h-screen bg-slate-50 relative">
             <Navbar />
 
-            <main className={`max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-6 md:py-10 transition-all ${showDonePopup || showChat || showOfferModal ? 'blur-sm brightness-50' : ''}`}>
+            <main className={`max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-6 md:py-10 transition-all ${showDonePopup || showChat ? 'blur-sm brightness-50' : ''}`}>
                 <button
                     onClick={() => navigate('/admin/dashboard')}
                     className="flex items-center text-slate-500 hover:text-blue-600 mb-6 transition-colors"
@@ -394,58 +265,7 @@ export default function CandidateDetail() {
                     <ArrowLeft className="w-4 h-4 mr-1" /> Back to Dashboard
                 </button>
 
-                {/* Offer Letter Notification */}
-                {candidate.offerLetterRequested && candidate.offerLetterStatus !== 'Generated' && (
-                    <div className="bg-amber-50 border-l-4 border-amber-400 p-6 mb-8 rounded-2xl flex justify-between items-center shadow-md animate-in slide-in-from-top-4 duration-500">
-                        <div className="flex items-center gap-4">
-                            <div className="w-12 h-12 bg-amber-100 rounded-2xl flex items-center justify-center text-amber-600 shadow-inner">
-                                <FileText className="h-6 w-6" />
-                            </div>
-                            <div>
-                                <h3 className="text-amber-900 font-bold text-lg leading-tight">Offer Letter Requested</h3>
-                                <p className="text-amber-700 text-sm mt-0.5">
-                                    Candidate is waiting for approval. <span className="ml-1 font-bold bg-amber-200/50 px-2 py-0.5 rounded text-amber-900 text-xs uppercase">Role: {personal.jobRole || 'N/A'}</span>
-                                </p>
-                            </div>
-                        </div>
-                        <button
-                            onClick={() => setShowOfferModal(true)}
-                            className="bg-amber-500 hover:bg-amber-600 text-white font-extrabold py-2.5 px-6 rounded-xl shadow-lg shadow-amber-200 transition-all hover:scale-105 active:scale-95 text-sm"
-                        >
-                            Generate & Approve
-                        </button>
-                    </div>
-                )}
 
-                {(candidate.offerLetterStatus === 'Generated' || candidate.offerLetterStatus === 'Sent') && (
-                    <div className={`${candidate.offerLetterStatus === 'Sent' ? 'bg-blue-50 border-blue-400' : 'bg-emerald-50 border-emerald-400'} border-l-4 p-4 mb-6 rounded-xl flex justify-between items-center shadow-sm`}>
-                        <div className="flex items-center">
-                            {candidate.offerLetterStatus === 'Sent' ? (
-                                <div className="flex items-center gap-3">
-                                    <div className="w-8 h-8 rounded-full bg-blue-100 flex items-center justify-center">
-                                        <Mail className="h-4 w-4 text-blue-600" />
-                                    </div>
-                                    <span className="text-blue-800 font-semibold text-sm">Offer Letter Sent to {candidate.email}</span>
-                                </div>
-                            ) : (
-                                <div className="flex items-center gap-3">
-                                    <div className="w-8 h-8 rounded-full bg-emerald-100 flex items-center justify-center">
-                                        <FileText className="h-4 w-4 text-emerald-600" />
-                                    </div>
-                                    <span className="text-emerald-800 font-semibold text-sm">Offer Letter Generated</span>
-                                </div>
-                            )}
-                        </div>
-                        <div className="flex items-center gap-3">
-                            <button
-                                onClick={() => generateOfferLetter(candidate)}
-                                className="inline-flex items-center px-4 py-2 bg-white border border-emerald-200 text-emerald-700 hover:bg-emerald-50 font-bold text-xs rounded-lg shadow-sm transition-all hover:scale-105 active:scale-95"
-                            >
-                                <Download className="w-3.5 h-3.5 mr-2" /> Download Copy
-                            </button>
-                        </div>
-                    </div>
-                )}
 
                 {/* Header */}
                 <div className="bg-white rounded-2xl md:rounded-3xl shadow-sm border border-slate-100 p-4 md:p-8 mb-6 md:mb-8 relative overflow-hidden">
@@ -457,42 +277,26 @@ export default function CandidateDetail() {
                             </div>
                             <div className="min-w-0 flex-1">
                                 <h1 className="text-2xl md:text-3xl font-extrabold text-slate-900 tracking-tight">{candidate.name}</h1>
-                                <p className="text-xs sm:text-sm text-slate-500 font-bold mt-1 uppercase tracking-wider">{candidate.role || 'Candidate'} <span className="mx-1 opacity-40">•</span> ID: {candidate.id || candidate._id?.slice(-6).toUpperCase()}</p>
+                                 {personal.employeeId && (
+                                     <p className="text-xs sm:text-sm text-slate-500 font-bold mt-1 uppercase tracking-wider">
+                                         Employee ID: <span className="text-indigo-600">{personal.employeeId}</span>
+                                     </p>
+                                 )}
                                 <div className="mt-3 flex flex-wrap gap-2">
-                                    <span className={`px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider ${candidate.status === 'Verified' ? 'bg-green-100 text-green-700' :
-                                        candidate.status === 'Rejected' ? 'bg-red-100 text-red-700' :
-                                            'bg-blue-100 text-blue-700'
-                                        } `}>
-                                        ● {candidate.status}
-                                    </span>
-                                    <span className="px-3 py-1 rounded-full text-xs font-bold bg-slate-100 text-slate-600 uppercase tracking-wider">
-                                        Joined {new Date(candidate.createdAt).toLocaleDateString()}
-                                    </span>
+                                     <span className="px-3 py-1 rounded-full text-xs font-bold bg-indigo-50 text-indigo-700 border border-indigo-100 uppercase tracking-wider">
+                                         Joining Date: {personal.joiningDate ? new Date(personal.joiningDate).toLocaleDateString() : 'Pending'}
+                                     </span>
                                 </div>
                             </div>
                         </div>
                         <div className="flex flex-col sm:flex-row w-full md:w-auto gap-3 mt-6 md:mt-0 sm:items-center">
-                            {!mailerStatus.configured && (
-                                <button
-                                    onClick={() => setShowSettingsModal(true)}
-                                    className="mr-2 flex items-center gap-1.5 px-3 py-1.5 bg-rose-50 text-rose-600 rounded-lg border border-rose-100 animate-pulse hover:bg-rose-100 transition-colors"
-                                >
-                                    <Settings className="w-4 h-4" />
-                                    <span className="text-[10px] font-bold uppercase">Configure Mailer</span>
-                                </button>
-                            )}
 
-                            <button className="w-full sm:w-auto justify-center inline-flex items-center px-5 py-2.5 rounded-xl shadow-lg shadow-blue-200 text-sm font-bold text-white bg-blue-600 hover:bg-blue-700 transition-all hover:-translate-y-0.5" onClick={() => setShowChat(true)}>
+
+                        <div className="flex flex-col sm:flex-row w-full md:w-auto gap-3 mt-6 md:mt-0 sm:items-center">
+                            <button className="w-full sm:w-auto justify-center inline-flex items-center px-5 py-2.5 rounded-xl shadow-lg shadow-indigo-200 text-sm font-bold text-white bg-indigo-600 hover:bg-indigo-700 transition-all hover:-translate-y-0.5" onClick={() => setShowChat(true)}>
                                 <User className="w-4 h-4 mr-2" /> Chat
                             </button>
-                            <button className="w-full sm:w-auto justify-center inline-flex items-center px-5 py-2.5 rounded-xl border border-slate-200 text-sm font-bold text-slate-600 bg-white hover:bg-slate-50 transition-all">
-                                <XCircle className="w-4 h-4 mr-2 text-red-500" /> Reject
-                            </button>
-                            <button
-                                onClick={() => setShowDonePopup(true)}
-                                className="w-full sm:w-auto justify-center inline-flex items-center px-5 py-2.5 rounded-xl shadow-lg shadow-emerald-200 text-sm font-bold text-white bg-emerald-600 hover:bg-emerald-700 transition-all hover:-translate-y-0.5">
-                                <CheckCircle className="w-4 h-4 mr-2" /> Approve
-                            </button>
+                        </div>
                         </div>
                     </div>
                 </div>
@@ -533,14 +337,32 @@ export default function CandidateDetail() {
                                         <p className="text-sm text-slate-900 font-medium">{personal.lastName || 'N/A'}</p>
                                     )}
                                 </div>
-                                <div>
-                                    <label className="text-xs font-semibold text-slate-500 uppercase tracking-wider">Candidate ID</label>
-                                    {isEditingPersonal ? (
-                                        <input type="text" value={tempPersonal.id || candidate.id || ''} onChange={(e) => setTempPersonal({ ...tempPersonal, id: e.target.value })} className="w-full mt-1 p-2 text-sm border rounded-lg focus:ring-2 focus:ring-blue-500" />
-                                    ) : (
-                                        <p className="text-sm text-slate-900 font-medium">{candidate.id || candidate._id?.slice(-6).toUpperCase()}</p>
-                                    )}
-                                </div>
+                                 <div className="grid grid-cols-2 gap-4">
+                                     <div>
+                                         <label className="text-xs font-semibold text-slate-500 uppercase tracking-wider">Employee ID</label>
+                                         {isEditingPersonal ? (
+                                             <input type="text" value={tempPersonal.employeeId || ''} onChange={(e) => setTempPersonal({ ...tempPersonal, employeeId: e.target.value })} className="w-full mt-1 p-2 text-sm border-indigo-200 border rounded-lg focus:ring-2 focus:ring-indigo-500 font-bold text-indigo-700" />
+                                         ) : (
+                                             <div className="flex flex-col mt-1">
+                                                <p className="text-sm text-indigo-700 font-black bg-indigo-50 px-2 py-0.5 rounded border border-indigo-100 w-fit">
+                                                    {personal.employeeId || 'NOT ASSIGNED'}
+                                                </p>
+                                                <p className="text-[10px] text-slate-400 mt-1 uppercase italic">Sys ID: {candidate.id}</p>
+                                             </div>
+                                         )}
+                                     </div>
+                                     <div>
+                                         <label className="text-xs font-semibold text-slate-500 uppercase tracking-wider">Joining Date</label>
+                                         {isEditingPersonal ? (
+                                             <input type="date" value={tempPersonal.joiningDate || ''} onChange={(e) => setTempPersonal({ ...tempPersonal, joiningDate: e.target.value })} className="w-full mt-1 p-2 text-sm border-slate-200 border rounded-lg focus:ring-2 focus:ring-indigo-500" />
+                                         ) : (
+                                             <div className="flex items-center gap-2 mt-1">
+                                                 <Clock className="w-3 h-3 text-emerald-500" />
+                                                 <p className="text-sm text-slate-900 font-black">{personal.joiningDate || 'NOT SET'}</p>
+                                             </div>
+                                         )}
+                                     </div>
+                                 </div>
                                 <div>
                                     <label className="text-xs font-semibold text-slate-500 uppercase tracking-wider">Email</label>
                                     <p className="text-sm text-slate-400 font-medium break-words italic">{candidate.email} (Non-editable)</p>
@@ -697,7 +519,7 @@ export default function CandidateDetail() {
                                     docs.map((doc, idx) => (
                                         <div key={idx} className="flex flex-col sm:flex-row sm:items-center justify-between p-4 sm:p-5 bg-white rounded-2xl border border-slate-200 hover:border-blue-400 hover:shadow-md transition-all group gap-4">
                                             <div className="flex items-center">
-                                                <div className="bg-blue-50 p-3 rounded-xl border border-blue-100 group-hover:bg-blue-600 group-hover:text-white transition-colors">
+                                                <div className="bg-indigo-50 p-3 rounded-xl border border-indigo-100 group-hover:bg-indigo-600 group-hover:text-white transition-colors">
                                                     <FileText className="w-6 h-6" />
                                                 </div>
                                                 <div className="ml-4">
@@ -706,15 +528,8 @@ export default function CandidateDetail() {
                                                 </div>
                                             </div>
                                             <div className="flex items-center gap-2">
-                                                <button className="p-2.5 text-slate-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-all" title="View">
+                                                <button className="p-2.5 text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 rounded-lg transition-all" title="View">
                                                     <Eye className="w-5 h-5" />
-                                                </button>
-                                                <div className="h-6 w-px bg-slate-200 mx-1"></div>
-                                                <button className="p-2.5 text-slate-400 hover:text-emerald-600 hover:bg-emerald-50 rounded-lg transition-all" title="Approve">
-                                                    <CheckCircle className="w-5 h-5" />
-                                                </button>
-                                                <button className="p-2.5 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition-all" title="Reject">
-                                                    <XCircle className="w-5 h-5" />
                                                 </button>
                                             </div>
                                         </div>
@@ -727,95 +542,17 @@ export default function CandidateDetail() {
                             <button
                                 onClick={handleDownloadAll}
                                 disabled={!docs || docs.length === 0}
-                                className="px-6 py-3 bg-white border-2 border-slate-200 text-slate-700 rounded-xl font-bold hover:border-blue-300 hover:bg-blue-50 transition-all text-sm flex items-center disabled:opacity-50 disabled:cursor-not-allowed shadow-sm"
+                                className="px-6 py-3 bg-white border-2 border-slate-200 text-slate-700 rounded-xl font-bold hover:border-indigo-300 hover:bg-indigo-50 transition-all text-sm flex items-center disabled:opacity-50 disabled:cursor-not-allowed shadow-sm"
                             >
                                 <Download className="w-5 h-5 mr-2 text-slate-400" />
                                 Download All
-                            </button>
-                            <button
-                                onClick={() => setShowDonePopup(true)}
-                                className="px-8 py-3 bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-xl font-bold shadow-lg shadow-blue-500/30 hover:shadow-xl hover:scale-105 transition-all text-lg flex items-center"
-                            >
-                                <CheckCircle className="w-5 h-5 mr-2" />
-                                Verification Done
                             </button>
                         </div>
                     </div>
                 </div>
             </main>
 
-            {/* Offer Letter Modal */}
-            {showOfferModal && (
-                <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-                    <div className="absolute inset-0 bg-slate-900/40 backdrop-blur-sm" onClick={() => setShowOfferModal(false)}></div>
-                    <div className="bg-white rounded-2xl shadow-2xl w-full max-w-2xl relative z-10 animate-in zoom-in-95 duration-200 max-h-[90vh] flex flex-col">
-                        <div className="p-6 border-b border-slate-100 flex justify-between items-center bg-slate-50/50 rounded-t-2xl">
-                            <h2 className="text-xl font-bold text-slate-900">Generate Offer Letter</h2>
-                            <button onClick={() => setShowOfferModal(false)} className="text-slate-400 hover:text-slate-600">
-                                <XCircle className="w-6 h-6" />
-                            </button>
-                        </div>
 
-                        <div className="p-6 overflow-y-auto">
-                            <form id="offerForm" onSubmit={handlePrepareOffer} className="space-y-4">
-                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                                    <div>
-                                        <label className="block text-sm font-medium text-slate-700 mb-1">Employee Name (To)</label>
-                                        <input type="text" name="employeeName" value={offerForm.employeeName} onChange={handleOfferChange} required className="w-full rounded-lg border-slate-300 text-sm" />
-                                    </div>
-                                    <div>
-                                        <label className="block text-sm font-medium text-slate-700 mb-1">Company Name</label>
-                                        <input type="text" name="companyName" value={offerForm.companyName} onChange={handleOfferChange} required className="w-full rounded-lg border-slate-300 text-sm" />
-                                    </div>
-                                    <div>
-                                        <label className="block text-sm font-medium text-slate-700 mb-1">Company Location</label>
-                                        <input type="text" name="location" value={offerForm.location} onChange={handleOfferChange} required className="w-full rounded-lg border-slate-300 text-sm" />
-                                    </div>
-                                    <div className="sm:col-span-2">
-                                        <label className="block text-sm font-medium text-slate-700 mb-1">Company Address</label>
-                                        <input type="text" name="companyAddress" value={offerForm.companyAddress} onChange={handleOfferChange} required className="w-full rounded-lg border-slate-300 text-sm" />
-                                    </div>
-                                    <div>
-                                        <label className="block text-sm font-medium text-slate-700 mb-1">Admin Name / Sender</label>
-                                        <input type="text" name="adminName" value={offerForm.adminName} onChange={handleOfferChange} required className="w-full rounded-lg border-slate-300 text-sm" />
-                                    </div>
-                                    <div>
-                                        <label className="block text-sm font-medium text-slate-700 mb-1">Joining Date</label>
-                                        <input type="date" name="joiningDate" value={offerForm.joiningDate} onChange={handleOfferChange} required className="w-full rounded-lg border-slate-300 text-sm" />
-                                    </div>
-                                    <div>
-                                        <label className="block text-sm font-medium text-slate-700 mb-1">Candidate Role</label>
-                                        <input type="text" name="jobRole" value={offerForm.jobRole} onChange={handleOfferChange} required className="w-full rounded-lg border-slate-300 text-sm" />
-                                    </div>
-                                    <div>
-                                        <label className="block text-sm font-medium text-slate-700 mb-1">Annual CTC</label>
-                                        <input type="text" name="ctc" value={offerForm.ctc} onChange={handleOfferChange} placeholder="e.g. 12 LPA" required className="w-full rounded-lg border-slate-300 text-sm" />
-                                    </div>
-                                    <div className="sm:col-span-2">
-                                        <label className="block text-sm font-medium text-slate-700 mb-1">Roles & Responsibilities</label>
-                                        <textarea name="responsibilities" value={offerForm.responsibilities} onChange={handleOfferChange} rows={3} placeholder="Brief summary of duties..." className="w-full rounded-lg border-slate-300 text-sm" />
-                                    </div>
-                                    <div className="sm:col-span-2">
-                                        <label className="block text-sm font-medium text-slate-700 mb-1">Employee Email Address</label>
-                                        <input type="email" name="recipientEmail" value={offerForm.recipientEmail} onChange={handleOfferChange} required className="w-full rounded-lg border-slate-300 text-sm focus:ring-blue-500 focus:border-blue-500" placeholder="employee@example.com" />
-                                    </div>
-                                    <div className="sm:col-span-2">
-                                        <label className="block text-sm font-medium text-slate-700 mb-1">Employee ID (Optional)</label>
-                                        <input type="text" name="employeeId" value={offerForm.employeeId} onChange={handleOfferChange} className="w-full rounded-lg border-slate-300 text-sm focus:ring-blue-500 focus:border-blue-500" placeholder="e.g. FIC-2024-001" />
-                                    </div>
-                                </div>
-                            </form>
-                        </div>
-
-                        <div className="p-4 border-t border-slate-100 flex justify-end gap-3 bg-slate-50/50 rounded-b-2xl">
-                            <button type="button" onClick={() => setShowOfferModal(false)} className="px-4 py-2 border border-slate-300 rounded-lg text-slate-700 hover:bg-slate-50 font-medium text-sm">Cancel</button>
-                            <button type="submit" form="offerForm" className="px-8 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 font-bold text-sm shadow-lg shadow-blue-500/20 transition-all flex items-center">
-                                Submit & Download <Download className="w-4 h-4 ml-2" />
-                            </button>
-                        </div>
-                    </div>
-                </div>
-            )}
 
             {/* Chat Modal */}
             {showChat && (
@@ -902,124 +639,7 @@ export default function CandidateDetail() {
 
 
 
-            {/* Email Settings Modal */}
-            {showSettingsModal && (
-                <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
-                    <div className="absolute inset-0 bg-slate-900/60 backdrop-blur-md" onClick={() => setShowSettingsModal(false)}></div>
-                    <div className="bg-white rounded-3xl shadow-2xl w-full max-w-md relative z-10 animate-in zoom-in-95 duration-200 overflow-hidden">
-                        <div className="bg-gradient-to-r from-blue-600 to-indigo-700 p-6 text-white">
-                            <div className="flex justify-between items-center">
-                                <div className="flex items-center gap-3">
-                                    <div className="bg-white/20 p-2 rounded-xl">
-                                        <Mail className="w-6 h-6" />
-                                    </div>
-                                    <h2 className="text-xl font-bold">Email Configuration</h2>
-                                </div>
-                                <button onClick={() => setShowSettingsModal(false)} className="hover:bg-white/10 p-1 rounded-lg transition-colors">
-                                    <XCircle className="w-6 h-6 text-white" />
-                                </button>
-                            </div>
-                        </div>
 
-                        <div className="p-8">
-                            <form className="space-y-6">
-                                <div>
-                                    <label className="block text-xs font-bold text-slate-500 uppercase tracking-widest mb-3">Email Provider</label>
-                                    <div className="flex gap-4">
-                                        <button
-                                            type="button"
-                                            onClick={() => setEmailSettings(prev => ({ ...prev, service: 'gmail' }))}
-                                            className={`flex-1 py-3 px-4 rounded-2xl border-2 transition-all flex items-center justify-center gap-2 font-bold text-sm ${emailSettings.service === 'gmail' ? 'border-blue-600 bg-blue-50 text-blue-700 shadow-md shadow-blue-100' : 'border-slate-100 text-slate-400 hover:bg-slate-50'}`}
-                                        >
-                                            <div className={`w-4 h-4 rounded-full border-2 flex items-center justify-center ${emailSettings.service === 'gmail' ? 'border-blue-600 bg-blue-600' : 'border-slate-300'}`}>
-                                                {emailSettings.service === 'gmail' && <div className="w-1.5 h-1.5 bg-white rounded-full"></div>}
-                                            </div>
-                                            Gmail
-                                        </button>
-                                        <button
-                                            type="button"
-                                            onClick={() => setEmailSettings(prev => ({ ...prev, service: 'brevo' }))}
-                                            className={`flex-1 py-3 px-4 rounded-2xl border-2 transition-all flex items-center justify-center gap-2 font-bold text-sm ${emailSettings.service === 'brevo' ? 'border-indigo-600 bg-indigo-50 text-indigo-700 shadow-md shadow-indigo-100' : 'border-slate-100 text-slate-400 hover:bg-slate-50'}`}
-                                        >
-                                            <div className={`w-4 h-4 rounded-full border-2 flex items-center justify-center ${emailSettings.service === 'brevo' ? 'border-indigo-600 bg-indigo-600' : 'border-slate-300'}`}>
-                                                {emailSettings.service === 'brevo' && <div className="w-1.5 h-1.5 bg-white rounded-full"></div>}
-                                            </div>
-                                            Brevo
-                                        </button>
-                                    </div>
-                                </div>
-
-                                <div>
-                                    <label className="block text-xs font-bold text-slate-500 uppercase tracking-widest mb-2">
-                                        {emailSettings.service === 'brevo' ? 'Brevo Login Email / User' : 'Gmail Address'}
-                                    </label>
-                                    <div className="relative">
-                                        <Mail className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
-                                        <input
-                                            type="email"
-                                            value={emailSettings.email}
-                                            onChange={(e) => setEmailSettings(prev => ({ ...prev, email: e.target.value }))}
-                                            className="w-full pl-10 pr-4 py-3 bg-slate-50 border border-slate-200 rounded-2xl text-sm focus:ring-2 focus:ring-blue-500 outline-none transition-all"
-                                            placeholder={emailSettings.service === 'brevo' ? 'brevo-user@example.com' : 'hr@example.com'}
-                                        />
-                                    </div>
-                                </div>
-
-                                <div>
-                                    <label className="block text-xs font-bold text-slate-500 uppercase tracking-widest mb-2">
-                                        {emailSettings.service === 'brevo' ? 'SMTP Key (v3)' : 'Gmail App Password (16 Letters)'}
-                                    </label>
-                                    <div className="relative">
-                                        <Key className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
-                                        <input
-                                            type="password"
-                                            value={emailSettings.password}
-                                            onChange={(e) => setEmailSettings(prev => ({ ...prev, password: e.target.value }))}
-                                            className="w-full pl-10 pr-4 py-3 bg-slate-50 border border-slate-200 rounded-2xl text-sm focus:ring-2 focus:ring-blue-500 outline-none transition-all font-mono"
-                                            placeholder={emailSettings.service === 'brevo' ? 'xkeysib-...' : 'xxxx xxxx xxxx xxxx'}
-                                        />
-                                    </div>
-                                    <div className="mt-2 p-3 bg-slate-50 rounded-xl border border-slate-100">
-                                        <p className="text-[10px] text-slate-600 leading-relaxed">
-                                            {emailSettings.service === 'brevo' ? (
-                                                <><b>Note:</b> Get your SMTP Key from <b>Brevo &gt; SMTP & API &gt; SMTP</b>.</>
-                                            ) : (
-                                                <><b>Note:</b> Use a 16-digit Google <b>"App Password"</b>, not your login password.</>
-                                            )}
-                                        </p>
-                                    </div>
-                                </div>
-
-                                {testResult && (
-                                    <div className={`p-4 rounded-2xl border flex gap-3 items-center ${testResult.success ? 'bg-emerald-50 border-emerald-100 text-emerald-700' : 'bg-rose-50 border-rose-100 text-rose-700'}`}>
-                                        {testResult.success ? <CheckCircle className="w-5 h-5 shrink-0" /> : <XCircle className="w-5 h-5 shrink-0" />}
-                                        <span className="text-xs font-medium">{testResult.message}</span>
-                                    </div>
-                                )}
-
-                                <div className="grid grid-cols-2 gap-4 pt-4">
-                                    <button
-                                        type="button"
-                                        onClick={handleTestConnection}
-                                        disabled={testingConnection || !emailSettings.email || !emailSettings.password}
-                                        className="py-3 px-4 border-2 border-slate-100 rounded-2xl text-slate-600 hover:bg-slate-50 font-bold text-sm transition-all flex items-center justify-center gap-2 disabled:opacity-50"
-                                    >
-                                        {testingConnection ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Test Connection'}
-                                    </button>
-                                    <button
-                                        type="button"
-                                        onClick={handleSaveSettings}
-                                        disabled={savingSettings || !emailSettings.email || !emailSettings.password}
-                                        className="py-3 px-4 bg-slate-900 text-white rounded-2xl hover:bg-slate-800 font-bold text-sm shadow-xl shadow-slate-200 transition-all flex items-center justify-center gap-2 disabled:opacity-50"
-                                    >
-                                        {savingSettings ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Save Settings'}
-                                    </button>
-                                </div>
-                            </form>
-                        </div>
-                    </div>
-                </div>
-            )}
         </div>
     );
 }

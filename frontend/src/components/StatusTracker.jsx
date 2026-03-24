@@ -11,16 +11,16 @@ export default function StatusTracker({ currentStep = 2 }) {
     return (
         <div className="w-full py-6">
             <div className="flex items-center justify-between relative">
-                <div className="absolute left-0 top-1/2 transform -translate-y-1/2 w-full h-1 bg-slate-200 -z-10"></div>
+                <div className="absolute left-0 top-1/2 transform -translate-y-1/2 w-full h-1 bg-indigo-100/50 -z-10 rounded-full"></div>
                 <div
-                    className="absolute left-0 top-1/2 transform -translate-y-1/2 h-1 bg-blue-600 -z-10 transition-all duration-500"
+                    className="absolute left-0 top-1/2 transform -translate-y-1/2 h-1 bg-indigo-600 -z-10 transition-all duration-700 ease-in-out rounded-full"
                     style={{ width: `${Math.min(100, ((currentStep - 1) / (steps.length - 1)) * 100)}%` }}
                 ></div>
 
                 {steps.map((step) => {
-                    let icon = <Circle className="w-6 h-6 text-slate-300 bg-white" />; // Default: Hidden/Inactive
-                    let colorClass = "text-slate-400";
-                    let bgClass = "bg-white border-slate-200 opacity-50"; // Faded/Hidden look for future steps
+                    let icon = <Circle className="w-6 h-6 text-indigo-200 bg-white" />; // Default: Hidden/Inactive
+                    let colorClass = "text-indigo-300";
+                    let bgClass = "bg-white border-indigo-100 opacity-50"; // Faded/Hidden look for future steps
 
                     // Completed Steps
                     if (step.id < currentStep) {
@@ -40,9 +40,9 @@ export default function StatusTracker({ currentStep = 2 }) {
                     }
                     // Current Step
                     else if (step.id === currentStep) {
-                        icon = <Clock className="w-6 h-6 text-blue-600 animate-pulse" />;
-                        colorClass = "text-blue-600 font-bold";
-                        bgClass = "bg-white border-blue-600 ring-4 ring-blue-50 opacity-100 scale-110";
+                        icon = <Clock className="w-6 h-6 text-indigo-600 animate-pulse" />;
+                        colorClass = "text-indigo-600 font-extrabold";
+                        bgClass = "bg-white border-indigo-600 ring-4 ring-indigo-50 opacity-100 scale-125 shadow-xl shadow-indigo-200";
                     }
                     // Upcoming Steps (remain hidden/faded as per user request)
 

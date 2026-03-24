@@ -153,7 +153,7 @@ function DocumentUploadContent() {
 
     if (isFresher === null) {
         return (
-            <div className="min-h-screen bg-slate-50 flex items-center justify-center p-4">
+            <div className="min-h-screen bg-indigo-50/30 flex items-center justify-center p-4 fade-in">
                 <div className="bg-white rounded-2xl shadow-xl p-8 max-w-md w-full text-center">
                     <h2 className="text-2xl font-bold text-slate-900 mb-4">Welcome! 👋</h2>
                     <p className="text-slate-600 mb-8">To customize your document checklist, please tell us about your experience level.</p>
@@ -185,7 +185,7 @@ function DocumentUploadContent() {
     }
 
     return (
-        <div className="min-h-screen bg-slate-50 relative">
+        <div className="min-h-screen bg-indigo-50/30 relative fade-in">
             <Navbar />
 
             <main className={`max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-10 transition-all ${showThankYouPopup ? 'blur-sm brightness-50 pointer-events-none' : ''}`}>
@@ -196,14 +196,14 @@ function DocumentUploadContent() {
                     <ArrowLeft className="w-4 h-4 mr-1" /> Change Experience Level
                 </button>
 
-                <div className="mb-8">
+                <div className="mb-10 slide-up">
                     <StatusTracker currentStep={4} />
                 </div>
 
-                <div className="mb-8 flex justify-between items-end">
+                <div className="mb-10 flex justify-between items-end slide-up" style={{ animationDelay: '0.1s' }}>
                     <div>
-                        <h1 className="text-3xl font-bold text-slate-900">Upload Documents</h1>
-                        <p className="text-slate-600 mt-2">
+                        <h1 className="text-4xl font-extrabold text-slate-900 tracking-tight">Upload Documents</h1>
+                        <p className="text-slate-500 mt-2 font-medium">
                             {isFresher ? "As a Fresher, please submit your educational and identity documents." : "Please submit your experience letters along with your educational documents."}
                         </p>
                     </div>
@@ -245,15 +245,15 @@ function DocumentUploadContent() {
                             {filteredDocuments.map((doc) => {
                                 const uploadState = uploads[doc.id];
                                 return (
-                                    <div
-                                        key={doc.id}
-                                        onDragOver={(e) => e.preventDefault()}
-                                        onDrop={(e) => handleDrop(e, doc.id)}
-                                        className={`bg-white rounded-2xl border-2 border-dashed p-6 transition-all group ${uploadState?.status === 'done'
-                                            ? 'border-emerald-500 bg-emerald-50/30'
-                                            : 'border-slate-300 hover:border-blue-500 hover:shadow-lg'
-                                            }`}
-                                    >
+                                     <div
+                                         key={doc.id}
+                                         onDragOver={(e) => e.preventDefault()}
+                                         onDrop={(e) => handleDrop(e, doc.id)}
+                                         className={`premium-card p-8 border-2 border-dashed transition-all group ${uploadState?.status === 'done'
+                                             ? 'border-emerald-500 bg-emerald-50/30 shadow-emerald-100'
+                                             : 'border-slate-300 hover:border-indigo-500 hover:bg-indigo-50/10'
+                                             }`}
+                                     >
                                         <div className="flex justify-between items-start mb-6">
                                             <div>
                                                 <h3 className="font-bold text-slate-900 text-lg">{doc.label}</h3>
@@ -280,13 +280,13 @@ function DocumentUploadContent() {
                                                     className="hidden"
                                                     onChange={(e) => handleFileSelect(doc.id, e.target.files[0])}
                                                 />
-                                                <label
-                                                    htmlFor={`file-${doc.id}`}
-                                                    className="cursor-pointer inline-flex items-center justify-center px-6 py-3 rounded-xl text-sm font-bold text-white bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 shadow-lg shadow-blue-500/30 transition-all hover:scale-105"
-                                                >
-                                                    <Upload className="w-4 h-4 mr-2" />
-                                                    Click to Upload
-                                                </label>
+                                                 <label
+                                                     htmlFor={`file-${doc.id}`}
+                                                     className="cursor-pointer inline-flex items-center justify-center px-8 py-4 rounded-2xl text-base font-bold text-white bg-indigo-600 hover:bg-indigo-700 shadow-xl shadow-indigo-200 transition-all hover:scale-105 active:scale-95"
+                                                 >
+                                                     <Upload className="w-5 h-5 mr-3" />
+                                                     Select File
+                                                 </label>
                                                 <p className="text-xs text-slate-400 mt-4">or drag and drop here</p>
                                             </div>
                                         ) : (
@@ -307,12 +307,12 @@ function DocumentUploadContent() {
                                                     )}
                                                 </div>
 
-                                                <div className="w-full bg-slate-100 rounded-full h-2 overflow-hidden">
-                                                    <div
-                                                        className={`h-full transition-all duration-300 ${uploadState.status === 'done' ? 'bg-emerald-500' : 'bg-blue-500'}`}
-                                                        style={{ width: `${uploadState.progress}%` }}
-                                                    ></div>
-                                                </div>
+                                                 <div className="w-full bg-slate-100 rounded-full h-2.5 overflow-hidden">
+                                                     <div
+                                                         className={`h-full transition-all duration-500 ${uploadState.status === 'done' ? 'bg-emerald-500' : 'bg-indigo-500'}`}
+                                                         style={{ width: `${uploadState.progress}%` }}
+                                                     ></div>
+                                                 </div>
                                             </div>
                                         )}
                                     </div>

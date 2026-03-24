@@ -43,7 +43,7 @@ export default function BankDetails() {
     };
 
     return (
-        <div className="min-h-screen bg-slate-50">
+        <div className="min-h-screen bg-indigo-50/30 fade-in">
             <Navbar />
 
             <main className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
@@ -54,14 +54,14 @@ export default function BankDetails() {
                     <ArrowLeft className="w-4 h-4 mr-1" /> Back to Dashboard
                 </button>
 
-                <div className="mb-8">
+                <div className="mb-10 slide-up">
                     <StatusTracker currentStep={3} />
                 </div>
 
-                <div className="bg-white rounded-2xl shadow-sm border border-slate-100 overflow-hidden">
-                    <div className="p-6 border-b border-slate-100 bg-slate-50/50">
-                        <h1 className="text-2xl font-bold text-slate-900">Bank Details</h1>
-                        <p className="text-slate-600 mt-1">Provide your bank account information for salary processing.</p>
+                <div className="premium-card overflow-hidden slide-up">
+                    <div className="p-8 border-b border-indigo-100 bg-indigo-50/30">
+                        <h1 className="text-3xl font-extrabold text-slate-900 tracking-tight">Bank Details</h1>
+                        <p className="text-slate-500 mt-2 font-medium">Provide your bank account information for salary processing.</p>
                     </div>
 
                     <form onSubmit={handleSubmit} className="p-6 sm:p-8 space-y-8">
@@ -73,7 +73,7 @@ export default function BankDetails() {
                                         type="text"
                                         name="accountName"
                                         required
-                                        className="w-full rounded-lg border-slate-300 focus:border-blue-500 focus:ring-blue-500 shadow-sm"
+                                         className="w-full rounded-xl border-slate-300 focus:border-indigo-500 focus:ring-indigo-500 shadow-sm"
                                         value={formData.accountName}
                                         onChange={handleChange}
                                     />
@@ -101,7 +101,7 @@ export default function BankDetails() {
                                             type="text"
                                             name="accountNumber"
                                             required
-                                            className="focus:ring-blue-500 focus:border-blue-500 block w-full pl-10 sm:text-sm border-slate-300 rounded-lg"
+                                             className="focus:ring-indigo-500 focus:border-indigo-500 block w-full pl-10 sm:text-sm border-slate-300 rounded-xl"
                                             value={formData.accountNumber}
                                             onChange={handleChange}
                                         />
@@ -117,7 +117,7 @@ export default function BankDetails() {
                                             type="text"
                                             name="ifscCode"
                                             required
-                                            className="focus:ring-blue-500 focus:border-blue-500 block w-full pl-10 sm:text-sm border-slate-300 rounded-lg uppercase"
+                                             className="focus:ring-indigo-500 focus:border-indigo-500 block w-full pl-10 sm:text-sm border-slate-300 rounded-xl uppercase"
                                             value={formData.ifscCode}
                                             onChange={handleChange}
                                             placeholder="SBIN0001234"
@@ -141,13 +141,13 @@ export default function BankDetails() {
                         </section>
 
                         <div className="pt-4 flex justify-end">
-                            <button
-                                type="submit"
-                                className="inline-flex items-center px-6 py-3 border border-transparent rounded-lg shadow-sm text-base font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors"
-                            >
-                                <Save className="w-5 h-5 mr-2" />
-                                Save & Continue
-                            </button>
+                             <button
+                                 type="submit"
+                                 className="btn-indigo tracking-tight"
+                             >
+                                 <Save className="w-5 h-5 mr-2" />
+                                 Save & Continue
+                             </button>
                         </div>
                     </form>
                 </div>

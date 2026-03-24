@@ -39,26 +39,23 @@ export default function Register() {
     };
 
     return (
-        <div className="min-h-screen bg-slate-50 flex flex-col justify-center py-12 sm:px-6 lg:px-8">
+        <div className="min-h-screen bg-indigo-50/30 flex flex-col justify-center py-12 sm:px-6 lg:px-8 fade-in">
             <div className="w-full px-4 sm:px-0 sm:mx-auto sm:w-full sm:max-w-md">
-                <div className="flex justify-center mb-6">
-                    <Link to="/" className="bg-blue-600 p-2 rounded-xl">
-                        <Building2 className="w-8 h-8 text-white" />
+                <div className="flex justify-center mb-6 slide-up">
+                    <Link to="/" className="bg-indigo-600 p-3 rounded-2xl shadow-xl shadow-indigo-200 hover:scale-110 transition-transform">
+                        <Building2 className="w-10 h-10 text-white" />
                     </Link>
                 </div>
-                <h2 className="mt-6 text-center text-3xl font-extrabold text-slate-900">
-                    Create your account
+                <h2 className="mt-6 text-center text-4xl font-extrabold text-slate-900 tracking-tight slide-up" style={{ animationDelay: '0.1s' }}>
+                    Join the Team
                 </h2>
-                <p className="mt-2 text-center text-sm text-slate-600">
-                    Already have an account?{' '}
-                    <Link to="/login" className="font-medium text-blue-600 hover:text-blue-500">
-                        Sign in
-                    </Link>
+                <p className="mt-3 text-center text-sm text-slate-500 font-medium slide-up" style={{ animationDelay: '0.2s' }}>
+                    Create your Account & Start your Journey
                 </p>
             </div>
 
-            <div className="w-full px-4 sm:px-0 mt-8 sm:mx-auto sm:w-full sm:max-w-md">
-                <div className="bg-white py-8 px-4 shadow-xl shadow-slate-200 sm:rounded-2xl sm:px-10 border border-slate-100">
+            <div className="w-full px-4 sm:px-0 mt-10 sm:mx-auto sm:w-full sm:max-w-md slide-up" style={{ animationDelay: '0.3s' }}>
+                <div className="premium-card py-10 px-6 sm:px-12">
                     <form className="space-y-4" onSubmit={handleSubmit}>
 
                         <div>
@@ -158,13 +155,13 @@ export default function Register() {
                             </div>
                         </div>
 
-                        <button
-                            type="submit"
-                            className="w-full flex justify-center py-2.5 px-4 border border-transparent rounded-lg shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors mt-6"
-                        >
-                            Create Account
-                            <ArrowRight className="ml-2 w-4 h-4" />
-                        </button>
+                         <button
+                             type="submit"
+                             className="w-full flex justify-center items-center py-4 px-6 border border-transparent rounded-2xl shadow-xl text-base font-bold text-white bg-indigo-600 hover:bg-indigo-700 shadow-indigo-200 transition-all transform hover:-translate-y-1 active:scale-95 mt-8"
+                         >
+                             Initialize Account
+                             <ArrowRight className="ml-3 w-5 h-5 group-hover:translate-x-1 transition-transform" />
+                         </button>
                     </form>
                 </div>
             </div>

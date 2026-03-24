@@ -19,59 +19,33 @@ export default function CandidateDashboard() {
 
     const currentStep = getStep();
 
-    // Offer Letter Request Logic
-    const [showConfetti, setShowConfetti] = useState(false);
 
-    useEffect(() => {
-        if (user?.offerLetterStatus === 'Generated') {
-            setShowConfetti(true);
-            setTimeout(() => setShowConfetti(false), 5000);
-        }
-    }, [user]);
 
-    const handleRequestOfferLetter = async () => {
-        try {
-            const token = localStorage.getItem('onboarding_token');
-            const response = await fetch(`${API_BASE}/api/candidates/request-offer`, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${token}`
-                },
-                body: JSON.stringify({ email: user.email })
-            });
-            if (response.ok) {
-                alert('Offer Letter Requested Successfully!');
-                window.location.reload();
-            } else {
-                alert('Failed to request offer letter.');
-            }
-        } catch (error) {
-            console.error('Error requesting offer:', error);
-            alert('Error requesting offer letter.');
-        }
-    };
+
 
     return (
-        <div className="min-h-screen bg-slate-50">
+        <div className="min-h-screen bg-indigo-50/30 fade-in">
             <Navbar />
 
             <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 md:py-10">
-                <div className="mb-8">
-                    <h1 className="text-3xl font-bold text-slate-900">Welcome, {user?.name}</h1>
-                    <p className="mt-2 text-slate-600">Complete your onboarding tasks to get started.</p>
+                <div className="mb-10 slide-up">
+                    <h1 className="text-4xl font-extrabold text-slate-900 tracking-tight">Welcome, {user?.name}</h1>
+                    <p className="mt-2 text-slate-500 font-medium">Complete your onboarding tasks to get started with your journey.</p>
                 </div>
 
                 {/* Status Tracker */}
-                <div className="bg-white p-4 md:p-6 rounded-2xl shadow-sm border border-slate-100 mb-8">
-                    <h2 className="text-lg font-semibold text-slate-900 mb-4">Onboarding Progress</h2>
+                <div className="premium-card p-6 md:p-8 mb-10 slide-up" style={{ animationDelay: '0.1s' }}>
+                    <h2 className="text-xl font-extrabold text-slate-900 mb-6 flex items-center gap-2">
+                        <div className="w-2 h-8 bg-indigo-600 rounded-full"></div>
+                        Onboarding Progress
+                    </h2>
                     <StatusTracker currentStep={currentStep} />
                 </div>
 
                 {/* Action Cards */}
                 {/* Action Cards */}
                 {/* Action Cards */}
-                <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-5 md:gap-8">
+                <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8 slide-up" style={{ animationDelay: '0.2s' }}>
 
                     {/* Personal Details Card */}
                     <Link to="/onboarding/personal-details" className="group">
@@ -212,96 +186,7 @@ export default function CandidateDashboard() {
 
                 </div>
 
-                {/* Offer Letter Section */}
-                <div className="mt-8 bg-white p-6 rounded-2xl shadow-sm border border-slate-100">
-                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-                        <div className="flex-1">
-                            <h2 className="text-xl font-bold text-slate-900">Offer Letter Status</h2>
-                            <p className="text-slate-600 mt-1">
-                                {user?.offerLetterStatus === 'Generated'
-                                    ? "Your offer letter has been generated! Check your email or download it here."
-                                    : user?.offerLetterRequested
-                                        ? "You have requested your offer letter. Pending Admin approval."
-                                        : "Once you complete all onboarding steps, you can request your offer letter."}
-                            </p>
-                        </div>
-                        <div className="flex flex-col sm:flex-row gap-3 w-full sm:w-auto">
-                            {/* Reset Button (Demo specific) */}
-                            <button
-                                onClick={async () => {
-                                    if (window.confirm('Reset all your onboarding progress? This will clear your documents and details for demo purposes.')) {
-                                        try {
-                                            const token = localStorage.getItem('onboarding_token');
-                                            const res = await fetch(`${API_BASE}/api/admin/reset-candidate/${user._id || user.id}`, {
-                                                method: 'POST',
-                                                headers: { 'Authorization': `Bearer ${token}` }
-                                            });
-                                            if (res.ok) {
-                                                // Clear local storage demo flags
-                                                localStorage.removeItem('onboarding_personal_details');
-                                                localStorage.removeItem('onboarding_bank_details');
-                                                localStorage.removeItem('candidate_docs');
-                                                alert("Progress Reset Successfully!");
-                                                window.location.reload();
-                                            }
-                                        } catch (err) {
-                                            alert("Error resetting progress");
-                                        }
-                                    }
-                                }}
-                                className="w-full sm:w-auto px-4 py-2 text-sm sm:text-base bg-slate-100 text-slate-600 rounded-lg font-bold hover:bg-slate-200 transition-all flex justify-center"
-                            >
-                                Reset Progress
-                            </button>
 
-                            {user?.offerLetterStatus === 'Generated' ? (
-                                <button
-                                    onClick={() => generateOfferLetter(user)}
-                                    className="w-full sm:w-auto justify-center px-4 py-2 text-sm sm:text-base bg-green-600 text-white rounded-lg font-bold shadow-lg shadow-green-500/30 hover:bg-green-700 transition-all flex items-center"
-                                >
-                                    <FileText className="w-5 h-5 mr-2" /> Download Offer
-                                </button>
-                            ) : user?.offerLetterRequested ? (
-                                <span className="inline-flex w-full sm:w-auto justify-center items-center px-4 py-2 rounded-lg bg-yellow-100 text-yellow-700 font-bold border border-yellow-200">
-                                    <Clock className="w-5 h-5 mr-2" /> Requested
-                                </span>
-                            ) : (
-                                <button
-                                    onClick={async () => {
-                                        if (!localStorage.getItem('candidate_docs')) {
-                                            alert("Please complete all steps first!");
-                                            return;
-                                        }
-                                        try {
-                                            const token = localStorage.getItem('onboarding_token');
-                                            const res = await fetch(`${API_BASE}/api/candidates/request-offer`, {
-                                                method: 'POST',
-                                                headers: {
-                                                    'Content-Type': 'application/json',
-                                                    'Authorization': `Bearer ${token}`
-                                                },
-                                                body: JSON.stringify({ email: user.email })
-                                            });
-                                            if (res.ok) {
-                                                alert("Offer Letter Requested Successfully!");
-                                                window.location.reload(); // Simple reload to refresh state
-                                            }
-                                        } catch (err) {
-                                            alert("Error requesting offer letter");
-                                        }
-                                    }}
-                                    disabled={!localStorage.getItem('candidate_docs')}
-                                    className={`w-full sm:w-auto justify-center px-4 py-2 text-sm sm:text-base rounded-lg font-bold transition-all flex items-center ${localStorage.getItem('candidate_docs')
-                                        ? 'bg-blue-600 text-white shadow-lg shadow-blue-500/30 hover:bg-blue-700'
-                                        : 'bg-slate-200 text-slate-400 cursor-not-allowed'
-                                        }`}
-                                >
-                                    <FileText className="w-5 h-5 mr-2" /> Request Offer Letter
-                                </button>
-                            )}
-                        </div>
-                    </div>
-                </div>
             </main>
         </div>
     );

@@ -12,7 +12,7 @@ const getApiBase = () => {
 
     // For local development with Vite
     if (isLocalhost) {
-        return `http://${window.location.hostname}:5000`;
+        return `http://${window.location.hostname}:5001`;
     }
     // Prefer VITE_API_URL environment variable if it exists (set in Vercel/Netlify)
     const envUrl = import.meta.env.VITE_API_URL;
@@ -37,14 +37,8 @@ export const AuthProvider = ({ children }) => {
             setUser(JSON.parse(storedUser));
         }
         setLoading(false);
+        setLoading(false);
     }, []);
-
-    console.log('DEBUG: VITE_API_URL =', import.meta.env.VITE_API_URL);
-    console.log('DEBUG: ACTUAL_API_BASE =', ACTUAL_API_BASE);
-    if (typeof window !== 'undefined') {
-        console.log('DEBUG: Current Location =', window.location.origin);
-        console.log('DEBUG: Frontend Version =', FRONTEND_VERSION);
-    }
 
 
     const login = async (email, password) => {
@@ -100,21 +94,26 @@ export const AuthProvider = ({ children }) => {
         try {
             // We need the email to identify the user. Use the one from context if available, or from the data.
             const email = user?.email || updateData.email;
-            if (!email) throw new Error('No user email found to update');
+            const id = user?.id || user?._id || updateData.id;
+            if (!email && !id) throw new Error('No user identification found to update');
 
             const token = localStorage.getItem('onboarding_token');
+            console.log(`DEBUG: Sending update for: ID='${id}', Email='${email}'`);
+            
             const response = await fetch(`${ACTUAL_API_BASE}/api/candidates/update`, {
                 method: 'PUT',
                 headers: {
                     'Content-Type': 'application/json',
                     'Authorization': `Bearer ${token}`
                 },
-                body: JSON.stringify({ email, ...updateData }),
+                body: JSON.stringify({ id, email, ...updateData }),
             });
 
             if (!response.ok) {
                 const errorData = await response.json().catch(() => ({}));
-                throw new Error(errorData.message || 'Update failed');
+                const msg = errorData.message || 'Update failed';
+                alert(`DEBUG: Update Failed.\nTarget Email: ${email}\nServer Message: ${msg}`);
+                throw new Error(msg);
             }
 
             const data = await response.json();

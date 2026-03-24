@@ -2,7 +2,7 @@ import { useNavigate } from 'react-router-dom';
 import { useState, useEffect, useRef } from 'react';
 import { useAuth, API_BASE } from '../../context/AuthContext';
 import Navbar from '../../components/Navbar';
-import { Users, Search, Filter, MoreVertical, Eye, FileText, CheckCircle, XCircle, Clock, MessageSquare, Send, X, Trash2, Settings, Key, Mail, Loader2, AlertCircle } from 'lucide-react';
+import { Users, Search, Filter, MoreVertical, Eye, FileText, CheckCircle, XCircle, Clock, MessageSquare, Send, X, Trash2 } from 'lucide-react';
 import JSZip from 'jszip';
 import { saveAs } from 'file-saver';
 
@@ -15,11 +15,6 @@ export default function AdminDashboard() {
     const [adminInput, setAdminInput] = useState('');
     const [retentionWarnings, setRetentionWarnings] = useState([]);
     const chatEndRef = useRef(null);
-    const [showSettingsModal, setShowSettingsModal] = useState(false);
-    const [emailSettings, setEmailSettings] = useState({ email: '', password: '' });
-    const [testingConnection, setTestingConnection] = useState(false);
-    const [savingSettings, setSavingSettings] = useState(false);
-    const [testResult, setTestResult] = useState(null);
     const [mailerStatus, setMailerStatus] = useState({ configured: false, user: '' });
 
 
@@ -62,27 +57,10 @@ export default function AdminDashboard() {
             }
         };
 
-        const fetchMailerStatus = async () => {
-            try {
-                const token = localStorage.getItem('onboarding_token');
-                const response = await fetch(`${API_BASE}/api/system-info`, {
-                    headers: { 'Authorization': `Bearer ${token}` }
-                });
-                if (response.ok) {
-                    const data = await response.json();
-                    if (data.mailerConfigured !== undefined) {
-                        setMailerStatus({ configured: data.mailerConfigured, user: data.mailerUser });
-                        if (data.mailerUser && data.mailerUser !== 'Not Configured') {
-                            setEmailSettings(prev => ({ ...prev, email: data.mailerUser }));
-                        }
-                    }
-                }
-            } catch (err) { console.log("System info fetch failed"); }
-        };
+
 
         fetchCandidates();
         checkRetention();
-        fetchMailerStatus();
 
         // POLL FOR UPDATES: Refresh candidate list and retention every 5 seconds for real-time notifications
         const pollInterval = setInterval(() => {
@@ -124,28 +102,7 @@ export default function AdminDashboard() {
         }
     };
 
-    const handleResetCandidate = async (candidateId) => {
-        if (window.confirm('Reset this candidate\'s onboarding? Documents will be cleared and status will return to "Pending".')) {
-            try {
-                const token = localStorage.getItem('onboarding_token');
-                const response = await fetch(`${API_BASE}/api/admin/reset-candidate/${candidateId}`, {
-                    method: 'POST',
-                    headers: { 'Authorization': `Bearer ${token}` }
-                });
 
-                if (response.ok) {
-                    alert('Candidate reset successfully!');
-                    // Refresh localized data or list
-                    window.location.reload();
-                } else {
-                    alert('Failed to reset candidate');
-                }
-            } catch (error) {
-                console.error('Reset Error:', error);
-                alert('Error resetting candidate');
-            }
-        }
-    };
 
     // Poll for chat messages when a chat is open
     useEffect(() => {
@@ -322,48 +279,20 @@ export default function AdminDashboard() {
     };
 
     return (
-        <div className="min-h-screen bg-slate-50 relative">
+        <div className="min-h-screen bg-indigo-50/30 relative">
             <Navbar />
 
             <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
                 {/* Header and Stats code remains same, omitted for brevity but keeping structure */}
                 <div className="md:flex md:items-center md:justify-between mb-8">
                     <div>
-                        <h1 className="text-2xl font-bold text-slate-900">Admin Dashboard</h1>
-                        <p className="mt-1 text-slate-500">Manage ongoing onboardings and verify documents.</p>
+                        <h1 className="text-3xl font-extrabold text-slate-900 tracking-tight">Admin Dashboard</h1>
+                        <p className="mt-2 text-slate-500 font-medium">Manage employee onboardings and documents.</p>
                     </div>
-                    <div className="mt-4 md:mt-0 flex items-center gap-3">
-                        {!mailerStatus.configured && (
-                            <div className="flex items-center gap-1.5 px-3 py-1.5 bg-rose-50 text-rose-600 rounded-lg border border-rose-100 animate-pulse">
-                                <AlertCircle className="w-4 h-4" />
-                                <span className="text-[10px] font-bold uppercase">Mailer Not Configured</span>
-                            </div>
-                        )}
-                        <button
-                            onClick={() => setShowSettingsModal(true)}
-                            className="inline-flex items-center px-4 py-2 bg-white border border-slate-200 text-slate-700 hover:bg-slate-50 font-bold text-sm rounded-xl shadow-sm transition-all"
-                        >
-                            <Settings className="w-4 h-4 mr-2" /> Settings
-                        </button>
-                    </div>
+
                 </div>
 
-                {/* Offer Request Alert */}
-                {candidates.some(c => c.offerLetterStatus === 'Requested') && (
-                    <div className="mb-6 bg-purple-50 border border-purple-200 rounded-xl p-4 flex items-center justify-between animate-in slide-in-from-top-4">
-                        <div className="flex items-center">
-                            <div className="bg-purple-100 p-2 rounded-lg mr-4 text-purple-600">
-                                <FileText className="w-6 h-6" />
-                            </div>
-                            <div>
-                                <h3 className="font-bold text-purple-900">
-                                    {candidates.filter(c => c.offerLetterStatus === 'Requested').length} Pending Offer Request(s)
-                                </h3>
-                                <p className="text-sm text-purple-700">Candidates have completed onboarding and are waiting for their offer letter.</p>
-                            </div>
-                        </div>
-                    </div>
-                )}
+
 
                 {/* Retention Warning Alert */}
                 {retentionWarnings.length > 0 && (
@@ -390,50 +319,44 @@ export default function AdminDashboard() {
                         <table className="min-w-full divide-y divide-slate-200">
                             <thead className="bg-slate-50">
                                 <tr>
-                                    <th className="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">Candidate</th>
-                                    <th className="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">Role</th>
-                                    <th className="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">Status</th>
+                                     <th className="px-6 py-3 text-left text-xs font-bold text-slate-500 uppercase tracking-widest">Employee</th>
+                                     <th className="px-6 py-3 text-left text-xs font-bold text-slate-500 uppercase tracking-widest text-indigo-600">Employee ID</th>
+                                     <th className="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">Joined</th>
+                                     <th className="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">Status</th>
                                     <th className="px-6 py-3 text-right text-xs font-medium text-slate-500 uppercase tracking-wider">Actions</th>
                                 </tr>
                             </thead>
                             <tbody className="bg-white divide-y divide-slate-200">
                                 {candidates.map((candidate) => (
                                     <tr key={candidate.id} className="hover:bg-slate-50 transition-colors">
-                                        <td className="px-6 py-4 whitespace-nowrap">
-                                            <div className="flex items-center">
-                                                <div className="flex-shrink-0 h-10 w-10">
-                                                    <div className="h-10 w-10 rounded-full bg-blue-100 flex items-center justify-center text-blue-600 font-bold">
-                                                        {candidate.name.charAt(0)}
-                                                    </div>
-                                                </div>
-                                                <div className="ml-4">
-                                                    <div className="text-sm font-medium text-slate-900">{candidate.name}</div>
-                                                    <div className="text-sm text-slate-500">{candidate.email}</div>
-                                                </div>
-                                            </div>
-                                        </td>
-                                        <td className="px-6 py-4 whitespace-nowrap">
-                                            <div className="text-sm text-slate-900">{candidate.role}</div>
-                                            <div className="text-xs text-slate-500">{candidate.date}</div>
-                                        </td>
+                                         <td className="px-6 py-4 whitespace-nowrap">
+                                             <div className="flex items-center">
+                                                 <div className="flex-shrink-0 h-10 w-10">
+                                                     <div className="h-10 w-10 rounded-full bg-indigo-100 flex items-center justify-center text-indigo-600 font-extrabold shadow-sm">
+                                                         {candidate.name.charAt(0)}
+                                                     </div>
+                                                 </div>
+                                                 <div className="ml-4">
+                                                     <div className="text-sm font-medium text-slate-900">{candidate.name}</div>
+                                                     <div className="text-sm text-slate-500">{candidate.email}</div>
+                                                 </div>
+                                             </div>
+                                         </td>
+                                         <td className="px-6 py-4 whitespace-nowrap">
+                                             <span className="text-xs font-bold text-indigo-700 bg-indigo-50 px-2 py-0.5 rounded border border-indigo-100 w-fit">
+                                                 {candidate.personalDetails?.employeeId || 'N/A'}
+                                             </span>
+                                         </td>
+                                         <td className="px-6 py-4 whitespace-nowrap">
+                                             <div className="text-sm font-bold text-slate-900 flex items-center gap-1">
+                                                 <Clock className="w-3 h-3 text-emerald-500" />
+                                                 {candidate.personalDetails?.joiningDate || 'Pending'}
+                                             </div>
+                                         </td>
                                         <td className="px-6 py-4 whitespace-nowrap">
                                             <div className="flex flex-col gap-1">
                                                 {getStatusBadge(candidate.status)}
-                                                {candidate.offerLetterStatus === 'Requested' && (
-                                                    <span className="px-2 py-1 text-xs font-semibold rounded-full bg-purple-100 text-purple-800 flex items-center md:w-fit animate-pulse">
-                                                        <FileText className="w-3 h-3 mr-1" /> Offer Requested
-                                                    </span>
-                                                )}
-                                                {candidate.offerLetterStatus === 'Generated' && (
-                                                    <span className="px-2 py-1 text-xs font-semibold rounded-full bg-green-50 text-green-600 flex items-center md:w-fit border border-green-200">
-                                                        <CheckCircle className="w-3 h-3 mr-1" /> Offer Sent
-                                                    </span>
-                                                )}
-                                                {candidate.offerLetterStatus === 'Sent' && (
-                                                    <span className="px-2 py-1 text-xs font-semibold rounded-full bg-blue-50 text-blue-600 flex items-center md:w-fit border border-blue-200">
-                                                        <CheckCircle className="w-3 h-3 mr-1" /> Emailed ✉️
-                                                    </span>
-                                                )}
+
                                             </div>
                                         </td>
                                         <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
@@ -457,16 +380,10 @@ export default function AdminDashboard() {
                                             >
                                                 <Trash2 className="w-4 h-4 mr-1" /> Remove
                                             </button>
-                                            <button
-                                                onClick={() => handleResetCandidate(candidate._id || candidate.id)}
-                                                className="text-amber-600 hover:text-amber-900 bg-amber-50 hover:bg-amber-100 px-3 py-1 rounded-md mr-2 transition-colors inline-flex items-center"
-                                                title="Reset Onboarding"
-                                            >
-                                                <Clock className="w-4 h-4 mr-1" /> Reset
-                                            </button>
+
                                             <button
                                                 onClick={() => navigate(`/admin/candidate/${candidate._id || candidate.id}`)}
-                                                className="text-slate-600 hover:text-slate-900 bg-slate-100 hover:bg-slate-200 px-3 py-1 rounded-md transition-colors inline-flex items-center"
+                                                className="text-indigo-600 hover:text-indigo-900 bg-indigo-50 hover:bg-indigo-100 px-3 py-1 rounded-md transition-all inline-flex items-center font-bold"
                                             >
                                                 <Eye className="w-4 h-4 mr-1" /> View
                                             </button>
@@ -520,8 +437,8 @@ export default function AdminDashboard() {
                                             </button>
                                         )}
 
-                                        <div className={`py-3 px-4 max-w-[80%] rounded-2xl shadow-sm text-sm ${msg.sender === 'admin'
-                                            ? 'bg-blue-600 text-white rounded-tr-none'
+                                        <div className={`py-3 px-4 max-w-[80%] rounded-2xl shadow-sm text-sm font-medium ${msg.sender === 'admin'
+                                            ? 'bg-indigo-600 text-white rounded-tr-none shadow-indigo-100'
                                             : 'bg-white border border-slate-200 text-slate-800 rounded-tl-none'
                                             }`}>
                                             {msg.text}
@@ -552,105 +469,18 @@ export default function AdminDashboard() {
                                 placeholder="Type your reply..."
                                 className="flex-1 border-slate-200 rounded-xl px-4 focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none bg-slate-50"
                             />
-                            <button
-                                type="submit"
-                                disabled={!adminInput.trim()}
-                                className="bg-blue-600 text-white p-3 rounded-xl hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors shadow-lg shadow-blue-500/30"
-                            >
-                                <Send className="w-5 h-5" />
-                            </button>
+                             <button
+                                 type="submit"
+                                 disabled={!adminInput.trim()}
+                                 className="bg-indigo-600 text-white p-3 rounded-xl hover:bg-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all shadow-lg shadow-indigo-500/30 hover:scale-105 active:scale-95"
+                             >
+                                 <Send className="w-5 h-5" />
+                             </button>
                         </form>
                     </div>
                 </div>
             )}
 
-            {/* Email Settings Modal */}
-            {showSettingsModal && (
-                <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
-                    <div className="absolute inset-0 bg-slate-900/60 backdrop-blur-md" onClick={() => setShowSettingsModal(false)}></div>
-                    <div className="bg-white rounded-3xl shadow-2xl w-full max-w-md relative z-10 animate-in zoom-in-95 duration-200 overflow-hidden">
-                        <div className="bg-gradient-to-r from-blue-600 to-indigo-700 p-6 text-white">
-                            <div className="flex justify-between items-center">
-                                <div className="flex items-center gap-3">
-                                    <div className="bg-white/20 p-2 rounded-xl">
-                                        <Mail className="w-6 h-6" />
-                                    </div>
-                                    <h2 className="text-xl font-bold">Email Configuration</h2>
-                                </div>
-                                <button onClick={() => setShowSettingsModal(false)} className="hover:bg-white/10 p-1 rounded-lg transition-colors">
-                                    <X className="w-6 h-6" />
-                                </button>
-                            </div>
-                            <p className="text-blue-100 text-xs mt-4 leading-relaxed">
-                                Used to send automated offer letters with PDF attachments to candidates.
-                            </p>
-                        </div>
-
-                        <div className="p-8">
-                            <form className="space-y-6">
-                                <div>
-                                    <label className="block text-xs font-bold text-slate-500 uppercase tracking-widest mb-2">Gmail Address</label>
-                                    <div className="relative">
-                                        <Mail className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
-                                        <input
-                                            type="email"
-                                            value={emailSettings.email}
-                                            onChange={(e) => setEmailSettings(prev => ({ ...prev, email: e.target.value }))}
-                                            className="w-full pl-10 pr-4 py-3 bg-slate-50 border border-slate-200 rounded-2xl text-sm focus:ring-2 focus:ring-blue-500 outline-none transition-all"
-                                            placeholder="hr@example.com"
-                                        />
-                                    </div>
-                                </div>
-
-                                <div>
-                                    <label className="block text-xs font-bold text-slate-500 uppercase tracking-widest mb-2">Gmail App Password (16 Letters)</label>
-                                    <div className="relative">
-                                        <Key className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
-                                        <input
-                                            type="password"
-                                            value={emailSettings.password}
-                                            onChange={(e) => setEmailSettings(prev => ({ ...prev, password: e.target.value }))}
-                                            className="w-full pl-10 pr-4 py-3 bg-slate-50 border border-slate-200 rounded-2xl text-sm focus:ring-2 focus:ring-blue-500 outline-none transition-all font-mono"
-                                            placeholder="xxxx xxxx xxxx xxxx"
-                                        />
-                                    </div>
-                                    <div className="mt-2 p-3 bg-amber-50 rounded-xl border border-amber-100">
-                                        <p className="text-[10px] text-amber-700 leading-relaxed">
-                                            <b>Note:</b> Use a 16-digit Google "App Password", not your login password. Ensure 2-Step Verification is ON in your account.
-                                        </p>
-                                    </div>
-                                </div>
-
-                                {testResult && (
-                                    <div className={`p-4 rounded-2xl border flex gap-3 items-center ${testResult.success ? 'bg-emerald-50 border-emerald-100 text-emerald-700' : 'bg-rose-50 border-rose-100 text-rose-700'}`}>
-                                        {testResult.success ? <CheckCircle className="w-5 h-5 shrink-0" /> : <XCircle className="w-5 h-5 shrink-0" />}
-                                        <span className="text-xs font-medium">{testResult.message}</span>
-                                    </div>
-                                )}
-
-                                <div className="grid grid-cols-2 gap-4 pt-4">
-                                    <button
-                                        type="button"
-                                        onClick={handleTestConnection}
-                                        disabled={testingConnection || !emailSettings.email || !emailSettings.password}
-                                        className="py-3 px-4 border-2 border-slate-100 rounded-2xl text-slate-600 hover:bg-slate-50 font-bold text-sm transition-all flex items-center justify-center gap-2 disabled:opacity-50"
-                                    >
-                                        {testingConnection ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Test Connection'}
-                                    </button>
-                                    <button
-                                        type="button"
-                                        onClick={handleSaveSettings}
-                                        disabled={savingSettings || !emailSettings.email || !emailSettings.password}
-                                        className="py-3 px-4 bg-slate-900 text-white rounded-2xl hover:bg-slate-800 font-bold text-sm shadow-xl shadow-slate-200 transition-all flex items-center justify-center gap-2 disabled:opacity-50"
-                                    >
-                                        {savingSettings ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Save Settings'}
-                                    </button>
-                                </div>
-                            </form>
-                        </div>
-                    </div>
-                </div>
-            )}
         </div>
     );
 }

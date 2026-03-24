@@ -23,22 +23,11 @@ const candidateSchema = new mongoose.Schema({
         zip: String,
         emergencyName: String,
         emergencyPhone: String,
-        jobRole: String // Added for Offer Letter workflow
+        jobRole: String, // Added for Offer Letter workflow
+        employeeId: String, // Added
+        joiningDate: String  // Added
     },
-    offerLetterRequested: { type: Boolean, default: false },
-    offerLetterStatus: { type: String, default: 'Pending' }, // Pending, Requested, Generated, Sent
-    offerDetails: {
-        employeeName: String,
-        adminName: String,
-        jobRole: String,
-        ctc: String,
-        companyName: String,
-        location: String,
-        joiningDate: String,
-        responsibilities: String,
-        companyAddress: String
-    },
-    offerPdfBase64: { type: String }, // Stores the latest generated PDF for sharing
+
     bankDetails: {
         accountName: String,
         accountNumber: String,
