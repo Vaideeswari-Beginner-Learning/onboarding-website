@@ -527,11 +527,6 @@ export default function CandidateDetail() {
                                                     <p className="text-xs text-slate-500 font-medium uppercase tracking-tight">{doc.type} • {doc.size}</p>
                                                 </div>
                                             </div>
-                                            <div className="flex items-center gap-2">
-                                                <button className="p-2.5 text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 rounded-lg transition-all" title="View">
-                                                    <Eye className="w-5 h-5" />
-                                                </button>
-                                            </div>
                                         </div>
                                     ))
                                 )}
