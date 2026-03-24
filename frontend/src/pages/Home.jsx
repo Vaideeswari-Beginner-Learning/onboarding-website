@@ -58,7 +58,7 @@ export default function Home() {
                             icon={<ShieldCheck className="w-8 h-8 text-white" />}
                             title="Secure Storage"
                             description="Bank-grade encryption ensures your documents and personal data remained protected at all times."
-                            color="from-emerald-500 to-teal-500"
+                            color="bg-gradient-to-br from-emerald-500 to-teal-500"
                             shadow="shadow-emerald-500/20"
                         />
                         <FeatureCard
@@ -72,7 +72,7 @@ export default function Home() {
                             icon={<FileCheck className="w-8 h-8 text-white" />}
                             title="Paperless Experience"
                             description="Sign digitally and upload documents instantly. No more printers or scanners needed."
-                            color="from-purple-500 to-pink-500"
+                            color="bg-gradient-to-br from-purple-500 to-pink-500"
                             shadow="shadow-purple-500/20"
                         />
                     </div>
