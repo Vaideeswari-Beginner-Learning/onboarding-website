@@ -190,7 +190,10 @@ app.post('/api/auth/login', async (req, res) => {
         }
 
         // 2. Check Candidate Credentials
-        const candidate = await Candidate.findOne({ email });
+        console.time("login_db_query");
+        const candidate = await Candidate.findOne({ email }).lean();
+        console.timeEnd("login_db_query");
+
         if (candidate) {
             // Validate Candidate password matches their registration
             if (candidate.password !== password) {
