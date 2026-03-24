@@ -191,7 +191,7 @@ app.post('/api/auth/login', async (req, res) => {
 
         // 2. Check Candidate Credentials
         console.time("login_db_query");
-        const candidate = await Candidate.findOne({ email }).lean();
+        const candidate = await Candidate.findOne({ email });
         console.timeEnd("login_db_query");
 
         if (candidate) {
@@ -230,7 +230,9 @@ app.post('/api/auth/otp/send', (req, res) => {
 
 // Candidate Register
 app.post('/api/auth/register', async (req, res) => {
-    const { name, email, phone, password } = req.body;
+    let { name, email, phone, password } = req.body;
+    email = email ? email.trim().toLowerCase() : '';
+    password = password ? password.trim() : '';
 
     try {
         // Find existing user
