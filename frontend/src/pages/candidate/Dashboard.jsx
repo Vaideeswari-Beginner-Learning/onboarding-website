@@ -81,14 +81,14 @@ export default function CandidateDashboard() {
                     {/* Personal Details Card */}
                     <motion.div variants={itemVariants}>
                         <Link to="/onboarding/personal-details" className="group block h-full">
-                            <motion.div 
-                                whileHover={{ y: -8, scale: 1.01 }}
-                                className={`rounded-[2.5rem] p-1 h-full shadow-2xl transition-all duration-500 ${isPersonalDone
-                                    ? 'bg-gradient-to-br from-violet-600 via-indigo-600 to-blue-600 shadow-indigo-500/30'
-                                    : 'bg-white border-2 border-slate-100 hover:border-indigo-200 shadow-slate-200/40'
-                                    }`}>
-                                <div className={`rounded-[2.2rem] p-8 h-full relative overflow-hidden flex flex-col ${isPersonalDone ? 'bg-white/5 backdrop-blur-sm' : 'bg-white'
-                                    }`}>
+                                <motion.div 
+                                    whileHover={{ y: -8, scale: 1.01 }}
+                                    className={`rounded-[2.5rem] p-1 h-full shadow-2xl transition-all duration-500 ${isPersonalDone
+                                        ? 'bg-gradient-to-br from-violet-600 via-indigo-600 to-blue-600 shadow-indigo-500/30'
+                                        : 'bg-gradient-to-br from-indigo-50 to-blue-50 border-2 border-indigo-100/50 hover:border-indigo-400 shadow-indigo-200/20'
+                                        }`}>
+                                    <div className={`rounded-[2.2rem] p-8 h-full relative overflow-hidden flex flex-col ${isPersonalDone ? 'bg-white/5 backdrop-blur-sm' : 'bg-white/80 backdrop-blur-md'
+                                        }`}>
                                     {/* Icon Background Textures */}
                                     <div className="absolute -top-10 -right-10 opacity-[0.03] group-hover:opacity-[0.07] transition-opacity rotate-12">
                                         <FileText className={`w-48 h-48 ${isPersonalDone ? 'text-white' : 'text-indigo-600'}`} />
@@ -183,9 +183,9 @@ export default function CandidateDashboard() {
                                     whileHover={{ y: -8, scale: 1.01 }}
                                     className={`rounded-[2.5rem] p-1 h-full shadow-2xl transition-all duration-500 ${isDocsDone
                                         ? 'bg-gradient-to-br from-amber-400 via-orange-500 to-red-500 shadow-orange-500/30'
-                                        : 'bg-white border-2 border-slate-100 hover:border-orange-200 shadow-slate-200/40'
+                                        : 'bg-gradient-to-br from-amber-50 to-orange-50 border-2 border-orange-100/50 hover:border-orange-400 shadow-orange-200/20'
                                         }`}>
-                                    <div className={`rounded-[2.2rem] p-8 h-full relative overflow-hidden flex flex-col ${isDocsDone ? 'bg-white/5 backdrop-blur-sm' : 'bg-white'
+                                    <div className={`rounded-[2.2rem] p-8 h-full relative overflow-hidden flex flex-col ${isDocsDone ? 'bg-white/5 backdrop-blur-sm' : 'bg-white/80 backdrop-blur-md'
                                         }`}>
                                         <div className="absolute -top-10 -right-10 opacity-[0.03] group-hover:opacity-[0.07] transition-opacity rotate-12">
                                             <Upload className={`w-48 h-48 ${isDocsDone ? 'text-white' : 'text-orange-500'}`} />

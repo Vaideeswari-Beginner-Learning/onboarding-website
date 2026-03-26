@@ -2,7 +2,7 @@ import React, { createContext, useContext, useState, useEffect } from 'react';
 
 const AuthContext = createContext(null);
 
-export const FRONTEND_VERSION = '2.1.6-VIBRANT';
+export const FRONTEND_VERSION = '2.1.7-COLORS';
 // NOTE: API_BASE is set AFTER getApiBase is defined below. See line ~34.
 // Fallback logic for local development if VITE_API_URL is missing
 const getApiBase = () => {
