@@ -53,7 +53,8 @@ export default function CandidateDashboard() {
                     className="mb-12"
                 >
                     <h1 className="text-4xl md:text-5xl font-black text-slate-900 tracking-tight leading-tight">
-                        Welcome, <span className="text-indigo-600">{user?.name?.split(' ')[0] || 'Employee'}</span>
+                        <span className="text-indigo-600 italic">VIBRANT</span> DASHBOARD 
+                        <span className="ml-2 text-xs font-mono text-slate-400">v{FRONTEND_VERSION}</span>
                     </h1>
                     <p className="mt-3 text-lg text-slate-500 font-medium max-w-2xl">
                         Your onboarding journey starts here. Complete the steps below to join the team.
