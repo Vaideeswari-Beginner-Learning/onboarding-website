@@ -328,12 +328,12 @@ export default function AdminDashboard() {
                             </thead>
                             <tbody className="bg-white divide-y divide-slate-200">
                                 {candidates.map((candidate) => (
-                                    <tr key={candidate.id} className="hover:bg-slate-50 transition-colors">
+                                    <tr key={candidate._id || candidate.id} className="hover:bg-slate-50 transition-colors">
                                          <td className="px-6 py-4 whitespace-nowrap">
                                              <div className="flex items-center">
                                                  <div className="flex-shrink-0 h-10 w-10">
                                                      <div className="h-10 w-10 rounded-full bg-indigo-100 flex items-center justify-center text-indigo-600 font-extrabold shadow-sm">
-                                                         {candidate.name.charAt(0)}
+                                                         {(candidate.name || candidate.email || '?').toUpperCase().charAt(0)}
                                                      </div>
                                                  </div>
                                                  <div className="ml-4">
@@ -404,7 +404,7 @@ export default function AdminDashboard() {
                         <div className="bg-slate-900 p-4 flex justify-between items-center text-white shrink-0">
                             <div className="flex items-center">
                                 <div className="h-10 w-10 rounded-full bg-white/10 flex items-center justify-center text-white font-bold mr-3">
-                                    {selectedChatCandidate.name.charAt(0)}
+                                    {(selectedChatCandidate.name || selectedChatCandidate.email || '?').toUpperCase().charAt(0)}
                                 </div>
                                 <div>
                                     <h3 className="font-bold">{selectedChatCandidate.name}</h3>

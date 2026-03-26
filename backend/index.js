@@ -182,7 +182,7 @@ app.post('/api/auth/login', async (req, res) => {
                 token,
                 user: {
                     id: 'ADMIN-001',
-                    name: 'Admin',
+                    name: email === 'info@forgeindiaconnect.com' ? 'Forge Admin' : 'HR Administrator',
                     email: email,
                     role: 'admin'
                 }
@@ -346,17 +346,33 @@ app.put('/api/candidates/update', (req, res, next) => {
         const debugInfo = `[${new Date().toISOString()}] UPDATE: ID='${searchId}', Email='${targetEmail}', Auth='${authEmail}'\n`;
         try { fs.appendFileSync('debug_update.log', debugInfo); } catch(e){}
 
-        // Try findOneAndUpdate with ID or Email
+        // Try findOneAndUpdate with ID or Email. 
+        // Use upsert: true to support Admin test accounts without existing candidate records.
+        const searchQuery = {
+            $or: [
+                { _id: mongoose.isValidObjectId(searchId) ? searchId : null },
+                { id: searchId }
+            ]
+        };
+        if (targetEmail) {
+            searchQuery.$or.push({ email: { $regex: new RegExp(`^${targetEmail}$`, 'i') } });
+        }
+
         const candidate = await Candidate.findOneAndUpdate(
+            searchQuery,
             { 
-                $or: [
-                    { _id: mongoose.isValidObjectId(searchId) ? searchId : null },
-                    { id: searchId },
-                    { email: { $regex: new RegExp(`^${targetEmail}$`, 'i') } }
-                ]
+                $set: {
+                    ...updateData,
+                    email: targetEmail // Ensure email is set on upsert
+                },
+                $setOnInsert: {
+                    id: 'CAND-' + Math.random().toString(36).substr(2, 9),
+                    name: updateData.name || targetEmail.split('@')[0],
+                    role: 'candidate',
+                    date: new Date().toISOString().split('T')[0]
+                }
             },
-            { $set: updateData },
-            { new: true }
+            { new: true, upsert: true }
         );
 
         if (!candidate) {
@@ -366,7 +382,7 @@ app.put('/api/candidates/update', (req, res, next) => {
             return res.status(404).json({ message: 'Candidate not found in database' });
         }
 
-        const successMsg = `✅ Update Successful for: ${email}\n`;
+        const successMsg = `✅ Update (Upsert) Successful for: ${email}\n`;
         fs.appendFileSync('debug_update.log', successMsg);
         console.log(successMsg);
         res.json({ user: candidate, message: 'Details updated successfully' });
@@ -397,7 +413,8 @@ app.get('/api/candidates/:id', authenticateToken, async (req, res) => {
         const candidate = await Candidate.findOne({
             $or: [
                 { _id: mongoose.isValidObjectId(req.params.id) ? req.params.id : null },
-                { id: req.params.id }
+                { id: req.params.id },
+                { email: req.params.id }
             ]
         });
 
@@ -423,7 +440,8 @@ app.delete('/api/candidates/:id', authenticateToken, isAdmin, async (req, res) =
         const candidate = await Candidate.findOneAndDelete({
             $or: [
                 { _id: mongoose.isValidObjectId(req.params.id) ? req.params.id : null },
-                { id: req.params.id }
+                { id: req.params.id },
+                { email: req.params.id }
             ]
         });
 

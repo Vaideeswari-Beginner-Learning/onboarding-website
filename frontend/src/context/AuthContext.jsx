@@ -118,8 +118,14 @@ export const AuthProvider = ({ children }) => {
 
             const data = await response.json();
 
-            // Merge updated fields into current user state
-            const updatedUser = { ...user, ...data.user };
+            // Merge updated fields into current user state, prioritizing the updated user data from server
+            const updatedUser = { 
+                ...user, 
+                ...data.user,
+                // Ensure name is preserved if server returned it
+                name: data.user?.name || user?.name || data.user?.email?.split('@')[0]
+            };
+            
             setUser(updatedUser);
             localStorage.setItem('onboarding_user', JSON.stringify(updatedUser));
 

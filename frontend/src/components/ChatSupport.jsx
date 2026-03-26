@@ -85,7 +85,7 @@ export default function ChatSupport() {
     if (!user || user.role === 'admin') return null; // Don't show floating chat for admin
 
     return (
-        <div className="fixed bottom-6 right-6 z-50">
+        <div className="fixed bottom-4 right-4 sm:bottom-6 sm:right-6 z-50 flex flex-col items-end">
             {!isOpen && (
                 <button
                     onClick={() => setIsOpen(true)}
@@ -98,7 +98,7 @@ export default function ChatSupport() {
             )}
 
             {isOpen && (
-                <div className="bg-white rounded-[24px] shadow-2xl border border-slate-200/60 w-80 sm:w-96 overflow-hidden animate-in zoom-in-95 slide-in-from-bottom-8 duration-300 flex flex-col h-[500px]">
+                <div className="bg-white rounded-[24px] shadow-2xl border border-slate-200/60 w-[calc(100vw-2rem)] sm:w-96 overflow-hidden animate-in zoom-in-95 slide-in-from-bottom-8 duration-300 flex flex-col h-[500px] max-h-[85vh]">
                     <div className="bg-gradient-to-r from-indigo-600 to-violet-600 p-4 flex justify-between items-center text-white shrink-0 shadow-md">
                         <h3 className="font-bold flex items-center tracking-wide">
                             <Headset className="w-5 h-5 mr-2 opacity-90" /> HR Support

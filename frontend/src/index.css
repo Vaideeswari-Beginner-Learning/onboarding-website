@@ -59,3 +59,106 @@
 ::-webkit-scrollbar-thumb {
   @apply bg-indigo-200 rounded-full border-4 border-indigo-50 hover:bg-indigo-300 transition-colors;
 }
+
+/* 🤖 AI Analysis Animations */
+.ai-brain-pulse {
+  animation: brainPulse 1.5s ease-in-out infinite;
+}
+
+@keyframes brainPulse {
+  0%, 100% { transform: scale(1); opacity: 0.8; }
+  50% { transform: scale(1.15); opacity: 1; }
+}
+
+.ai-scan-border {
+  animation: scanBorder 2s linear infinite;
+}
+
+@keyframes scanBorder {
+  0% { border-color: rgba(129, 140, 248, 0.3); box-shadow: 0 0 0 0 rgba(129, 140, 248, 0.4); }
+  50% { border-color: rgba(129, 140, 248, 0.8); box-shadow: 0 0 15px 3px rgba(129, 140, 248, 0.3); }
+  100% { border-color: rgba(129, 140, 248, 0.3); box-shadow: 0 0 0 0 rgba(129, 140, 248, 0.4); }
+}
+
+.ai-progress-bar {
+  animation: progressSlide 1.8s ease-in-out infinite;
+}
+
+@keyframes progressSlide {
+  0% { width: 5%; }
+  50% { width: 85%; }
+  100% { width: 5%; }
+}
+
+.ai-scan-modal {
+  animation: scanModalIn 0.5s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+@keyframes scanModalIn {
+  from {
+    opacity: 0;
+    transform: scale(0.9) translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+}
+
+.ai-dots::after {
+  content: '';
+  animation: dots 1.5s steps(4, end) infinite;
+}
+
+@keyframes dots {
+  0% { content: ''; }
+  25% { content: '.'; }
+  50% { content: '..'; }
+}
+
+/* 🏆 SUCCESS POPUP ANIMATIONS */
+@keyframes success-pop {
+  0% { transform: scale(0.8); opacity: 0; }
+  70% { transform: scale(1.05); }
+  100% { transform: scale(1); opacity: 1; }
+}
+
+@keyframes success-checkmark {
+  0% { stroke-dashoffset: 100; }
+  100% { stroke-dashoffset: 0; }
+}
+
+@keyframes success-float {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-15px); }
+}
+
+@keyframes confetti-fall {
+  0% { transform: translateY(-100%) rotate(0deg); opacity: 1; }
+  100% { transform: translateY(100vh) rotate(360deg); opacity: 0; }
+}
+
+.success-modal {
+  animation: success-pop 0.6s cubic-bezier(0.175, 0.885, 0.32, 1.275) both;
+}
+
+.success-icon-float {
+  animation: success-float 3s ease-in-out infinite;
+}
+
+.confetti-piece {
+  position: absolute;
+  width: 10px;
+  height: 10px;
+  background: #ffd700;
+  top: -10px;
+  opacity: 0;
+  animation: confetti-fall 3s linear infinite;
+}
+
+.bg-mesh-gradient {
+  background-color: #ffffff;
+  background-image: radial-gradient(at 0% 0%, hsla(253,16%,7%,1) 0, transparent 50%), 
+                    radial-gradient(at 50% 0%, hsla(225,39%,30%,1) 0, transparent 50%), 
+                    radial-gradient(at 100% 0%, hsla(339,49%,30%,1) 0, transparent 50%);
+}

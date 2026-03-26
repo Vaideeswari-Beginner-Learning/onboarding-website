@@ -43,7 +43,7 @@ export default function Navbar() {
                                      <div className="w-8 h-8 bg-indigo-100 rounded-full flex items-center justify-center border border-indigo-200 shadow-inner">
                                          <User className="w-4 h-4 text-indigo-600" />
                                      </div>
-                                        <span className="font-medium text-slate-700">{user.name || (user.role === 'admin' ? 'Admin' : 'User')}</span>
+                                        <span className="font-medium text-slate-700">{user.name || (user.role === 'admin' ? 'HR Panel' : 'Employee')}</span>
                                     </div>
                                     <button
                                         onClick={handleLogout}
@@ -94,7 +94,7 @@ export default function Navbar() {
                                         <User className="w-5 h-5 text-blue-600" />
                                     </div>
                                     <div>
-                                        <div className="font-bold text-slate-900">{user.name || (user.role === 'admin' ? 'Admin' : 'User')}</div>
+                                        <div className="font-bold text-slate-900">{user.name || (user.role === 'admin' ? 'HR Panel' : 'Employee')}</div>
                                         <div className="text-xs text-slate-500 font-medium uppercase tracking-wider">{user.role}</div>
                                     </div>
                                 </div>

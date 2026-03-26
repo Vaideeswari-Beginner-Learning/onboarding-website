@@ -29,7 +29,7 @@ export default function CandidateDashboard() {
 
             <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 md:py-10">
                 <div className="mb-10 slide-up">
-                    <h1 className="text-4xl font-extrabold text-slate-900 tracking-tight">Welcome, {user?.name}</h1>
+                    <h1 className="text-4xl font-extrabold text-slate-900 tracking-tight">Welcome, {user?.name || 'Employee'}</h1>
                     <p className="mt-2 text-slate-500 font-medium">Complete your onboarding tasks to get started with your journey.</p>
                 </div>
 

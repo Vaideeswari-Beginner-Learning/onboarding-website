@@ -21,7 +21,57 @@ export default function CandidateDetail() {
     const [chatInput, setChatInput] = useState('');
     const [suggestedUrl, setSuggestedUrl] = useState('');
     const [showSettingsModal, setShowSettingsModal] = useState(false);
+    const [showViewModal, setShowViewModal] = useState(false);
+    const [selectedDoc, setSelectedDoc] = useState(null);
+    const [blobUrl, setBlobUrl] = useState(null);
     const chatEndRef = useRef(null);
+
+    // Clean up blob URL on modal close or doc change
+    useEffect(() => {
+        return () => {
+            if (blobUrl) {
+                URL.revokeObjectURL(blobUrl);
+            }
+        };
+    }, [blobUrl]);
+
+    const handleViewDocument = (doc) => {
+        // We rely on the useEffect for revocation to avoid race conditions
+        // during the state transition which can crash the browser viewer.
+        
+        if (doc.url && doc.url.startsWith('data:')) {
+            try {
+                // Convert Base64 to Blob for robust viewing/downloading
+                const parts = doc.url.split(';base64,');
+                const contentType = parts[0].split(':')[1];
+                const raw = window.atob(parts[1]);
+                const rawLength = raw.length;
+                const uInt8Array = new Uint8Array(rawLength);
+                for (let i = 0; i < rawLength; ++i) {
+                    uInt8Array[i] = raw.charCodeAt(i);
+                }
+                const blob = new Blob([uInt8Array], { type: contentType });
+                const url = URL.createObjectURL(blob);
+                setBlobUrl(url);
+            } catch (err) {
+                console.error("Blob Conversion Error:", err);
+                setBlobUrl(doc.url); // Fallback to raw URL
+            }
+        } else if (doc.url) {
+            // If it's a relative path (legacy), prefix with backend URL
+            let finalUrl = doc.url;
+            if (!finalUrl.startsWith('http') && !finalUrl.startsWith('blob:')) {
+                const backendRoot = API_BASE.replace('/api', '');
+                finalUrl = `${backendRoot}${finalUrl.startsWith('/') ? '' : '/'}${finalUrl}`;
+            }
+            setBlobUrl(finalUrl); 
+        } else {
+            setBlobUrl(null);
+        }
+        
+        setSelectedDoc(doc);
+        setShowViewModal(true);
+    };
 
     // --- Edit Mode States ---
     const [isEditingPersonal, setIsEditingPersonal] = useState(false);
@@ -156,36 +206,6 @@ export default function CandidateDetail() {
         return url;
     };
 
-    const handleDownloadAll = async () => {
-        if (!candidate || !candidate.documents || candidate.documents.length === 0) {
-            alert("No documents to download.");
-            return;
-        }
-
-        try {
-            const zip = new JSZip();
-            const docsFolder = zip.folder(`${candidate.name.replace(/\s+/g, '_')}_Documents`);
-
-            candidate.documents.forEach((doc, idx) => {
-                if (doc.url) {
-                    const base64Data = doc.url.split(',')[1];
-                    let extension = '.pdf';
-                    if (doc.url.startsWith('data:image/jpeg')) extension = '.jpg';
-                    else if (doc.url.startsWith('data:image/png')) extension = '.png';
-                    
-                    const cleanName = doc.name ? doc.name.replace(/[^a-zA-Z0-9.\-_]/g, '_') : `${doc.type.replace(/\s+/g, '_')}_${idx + 1}${extension}`;
-                    docsFolder.file(cleanName, base64Data, { base64: true });
-                }
-            });
-
-            const content = await zip.generateAsync({ type: 'blob' });
-            saveAs(content, `${candidate.name.replace(/\s+/g, '_')}_Documents.zip`);
-
-        } catch (error) {
-            console.error("Error generating zip:", error);
-            alert("Failed to download documents. Please try again.");
-        }
-    };
 
 
 
@@ -253,11 +273,107 @@ export default function CandidateDetail() {
     const bank = candidate.bankDetails || {};
     const docs = candidate.documents || [];
 
+    const handleDownloadAll = async () => {
+        if (!candidate || !docs || docs.length === 0) {
+            alert("No documents to download.");
+            return;
+        }
+
+        const safeName = (candidate.name || candidate.email || 'Candidate').replace(/\s+/g, '_');
+        console.log(`DEBUG: Starting Download All for ${safeName}. Total docs in array: ${docs.length}`);
+
+        try {
+            const zip = new JSZip();
+            const folderName = `${safeName}_Documents`;
+            const docsFolder = zip.folder(folderName);
+            const usedNames = new Set();
+
+            for (let idx = 0; idx < docs.length; idx++) {
+                const doc = docs[idx];
+                console.log(`DEBUG: Processing Doc ${idx + 1}: ${doc.name} (${doc.type})`);
+
+                if (!doc.url) {
+                    console.warn(`DEBUG: Skipping Doc ${idx + 1} - No URL found.`);
+                    continue;
+                }
+
+                let fileData;
+                let isBase64Encoded = false;
+
+                if (doc.url.startsWith('data:')) {
+                    fileData = doc.url.split(',')[1];
+                    isBase64Encoded = true;
+                    console.log(`DEBUG: Doc ${idx + 1} is Base64.`);
+                } else {
+                    let finalUrl = doc.url;
+                    if (!finalUrl.startsWith('http') && !finalUrl.startsWith('blob:')) {
+                        const backendRoot = API_BASE.replace('/api', '');
+                        finalUrl = `${backendRoot}${finalUrl.startsWith('/') ? '' : '/'}${finalUrl}`;
+                    }
+                    console.log(`DEBUG: Fetching remote doc from: ${finalUrl}`);
+
+                    try {
+                        const response = await fetch(finalUrl);
+                        if (!response.ok) throw new Error(`Fetch failed with status ${response.status}`);
+                        fileData = await response.arrayBuffer();
+                        isBase64Encoded = false;
+                    } catch (err) {
+                        console.error(`ERROR: Failed to fetch ${doc.name}`, err);
+                        continue;
+                    }
+                }
+
+                if (fileData) {
+                    let extension = '.pdf';
+                    if (doc.url.startsWith('data:image/jpeg')) extension = '.jpg';
+                    else if (doc.url.startsWith('data:image/png')) extension = '.png';
+                    else if (doc.url.startsWith('data:image/')) extension = `.${doc.url.split(';')[0].split('/')[1]}`;
+                    
+                    let baseName = (doc.type || doc.name || 'Document').replace(/[^a-zA-Z0-9.\-_]/g, '_');
+                    
+                    if (!baseName.toLowerCase().endsWith('.pdf') && 
+                        !baseName.toLowerCase().endsWith('.jpg') && 
+                        !baseName.toLowerCase().endsWith('.jpeg') && 
+                        !baseName.toLowerCase().endsWith('.png')) {
+                        baseName += extension;
+                    }
+
+                    let finalFileName = baseName;
+                    let counter = 1;
+                    while (usedNames.has(finalFileName)) {
+                        const parts = baseName.split('.');
+                        const ext = parts.pop();
+                        finalFileName = `${parts.join('.')}_${counter}.${ext}`;
+                        counter++;
+                    }
+                    usedNames.add(finalFileName);
+
+                    console.log(`DEBUG: Adding ${finalFileName} to ZIP.`);
+                    docsFolder.file(finalFileName, fileData, { base64: isBase64Encoded });
+                }
+            }
+
+            if (usedNames.size === 0) {
+                alert("⚠️ No valid document data found to download.");
+                return;
+            }
+
+            console.log(`DEBUG: Generating ZIP with ${usedNames.size} files...`);
+            const content = await zip.generateAsync({ type: 'blob' });
+            saveAs(content, `${folderName}.zip`);
+            alert(`✅ Successfully downloaded ${usedNames.size} documents in a single ZIP! 📄📥`);
+
+        } catch (error) {
+            console.error("ZIP Generation Error:", error);
+            alert("❌ Failed to bundle documents. Please try again.");
+        }
+    };
+
     return (
         <div className="min-h-screen bg-slate-50 relative">
             <Navbar />
 
-            <main className={`max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-6 md:py-10 transition-all ${showDonePopup || showChat ? 'blur-sm brightness-50' : ''}`}>
+            <main className={`max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-6 md:py-10 transition-all ${showDonePopup || showChat || showViewModal ? 'blur-sm brightness-50' : ''}`}>
                 <button
                     onClick={() => navigate('/admin/dashboard')}
                     className="flex items-center text-slate-500 hover:text-blue-600 mb-6 transition-colors"
@@ -527,6 +643,12 @@ export default function CandidateDetail() {
                                                     <p className="text-xs text-slate-500 font-medium uppercase tracking-tight">{doc.type} • {doc.size}</p>
                                                 </div>
                                             </div>
+                                            <button 
+                                                onClick={() => handleViewDocument(doc)}
+                                                className="flex items-center gap-2 px-4 py-2 rounded-xl bg-slate-50 text-slate-600 hover:bg-blue-50 hover:text-blue-600 border border-slate-100 transition-all font-bold text-xs"
+                                            >
+                                                <Eye className="w-4 h-4" /> VIEW
+                                            </button>
                                         </div>
                                     ))
                                 )}
@@ -634,6 +756,108 @@ export default function CandidateDetail() {
 
 
 
+
+            {/* Document View Modal */}
+            {showViewModal && selectedDoc && (
+                <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
+                    <div className="absolute inset-0 bg-slate-900/60 backdrop-blur-sm" onClick={() => setShowViewModal(false)}></div>
+                    <div className="bg-white rounded-3xl shadow-2xl w-full max-w-5xl h-[90vh] flex flex-col relative z-20 overflow-hidden animate-in zoom-in-95 duration-200 border border-white/20">
+                        {/* Modal Header */}
+                        <div className="bg-slate-900 p-4 flex justify-between items-center text-white shrink-0">
+                            <div className="flex items-center gap-3">
+                                <div className="bg-white/10 p-2 rounded-lg">
+                                    <FileText className="w-5 h-5 text-blue-400" />
+                                </div>
+                                <div className="min-w-0">
+                                    <h3 className="font-bold text-sm truncate">{selectedDoc.name}</h3>
+                                    <p className="text-[10px] text-slate-400 uppercase tracking-widest">{selectedDoc.type} • {selectedDoc.size}</p>
+                                </div>
+                            </div>
+                            <div className="flex items-center gap-2">
+                                <a 
+                                    href={blobUrl || selectedDoc.url} 
+                                    download={selectedDoc.name}
+                                    className="p-2 hover:bg-white/10 rounded-lg transition-colors flex items-center gap-2 text-xs font-bold"
+                                >
+                                    <Download className="w-4 h-4" />
+                                </a>
+                                <button onClick={() => setShowViewModal(false)} className="hover:bg-red-500/20 p-2 rounded-lg transition-colors group">
+                                    <XCircle className="w-6 h-6 text-slate-400 group-hover:text-red-400" />
+                                </button>
+                            </div>
+                        </div>
+
+                        {/* Document Content */}
+                        <div className="flex-1 overflow-hidden bg-slate-100 flex items-center justify-center relative">
+                            {!selectedDoc.url ? (
+                                <div className="text-center p-8 bg-white rounded-3xl shadow-2xl border border-slate-100 max-w-sm mx-auto">
+                                    <div className="w-16 h-16 bg-slate-50 rounded-full flex items-center justify-center mx-auto mb-4 border border-slate-100">
+                                        <XCircle className="w-8 h-8 text-slate-300" />
+                                    </div>
+                                    <h4 className="text-lg font-bold text-slate-900 mb-2">Preview Not Available</h4>
+                                    <p className="text-sm text-slate-500 mb-6">This document was uploaded before the preview system was activated.</p>
+                                    <div className="flex flex-col gap-3">
+                                        <a 
+                                            href={blobUrl || selectedDoc.url} 
+                                            onClick={(e) => {
+                                                if (!blobUrl && !selectedDoc.url) {
+                                                    e.preventDefault();
+                                                    alert("Document source not found in database.");
+                                                }
+                                            }}
+                                            download={selectedDoc.name}
+                                            className="w-full py-3 bg-indigo-600 text-white rounded-xl font-bold hover:bg-indigo-700 transition-all text-xs flex items-center justify-center gap-2"
+                                        >
+                                            <Download className="w-4 h-4" /> DOWNLOAD TO VIEW
+                                        </a>
+                                        <button 
+                                            onClick={() => setShowViewModal(false)}
+                                            className="w-full py-3 bg-slate-100 text-slate-600 rounded-xl font-bold hover:bg-slate-200 transition-all text-xs"
+                                        >
+                                            Close Preview
+                                        </button>
+                                    </div>
+                                </div>
+                            ) : (selectedDoc.url && selectedDoc.url.toLowerCase().includes('application/pdf')) || selectedDoc.name.toLowerCase().endsWith('.pdf') ? (
+                                <iframe 
+                                    src={blobUrl || selectedDoc.url} 
+                                    className="w-full h-full border-none"
+                                    title="PDF Document Viewer"
+                                />
+                            ) : (
+                                <div className="w-full h-full overflow-auto p-4 flex items-center justify-center">
+                                    <img 
+                                        src={blobUrl || selectedDoc.url} 
+                                        alt={selectedDoc.name}
+                                        className="max-w-full max-h-full object-contain shadow-2xl rounded-lg bg-white"
+                                        onError={(e) => {
+                                            e.target.onerror = null;
+                                            e.target.src = "https://via.placeholder.com/800x1200?text=Error+Loading+Image";
+                                        }}
+                                    />
+                                </div>
+                            )}
+
+                            {/* Watermark */}
+                            <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 rotate-[-45deg] pointer-events-none select-none opacity-[0.03]">
+                                <h4 className="text-8xl font-black text-slate-900 whitespace-nowrap">
+                                    VAIDEESWARI VERIFIED
+                                </h4>
+                            </div>
+                        </div>
+
+                        {/* Modal Footer */}
+                        <div className="p-4 bg-white border-t border-slate-100 flex justify-end gap-3 shrink-0">
+                             <button 
+                                onClick={() => setShowViewModal(false)}
+                                className="px-6 py-2 rounded-xl text-sm font-bold bg-slate-900 text-white hover:bg-slate-800 transition-all"
+                             >
+                                Close Preview
+                             </button>
+                        </div>
+                    </div>
+                </div>
+            )}
 
         </div>
     );
