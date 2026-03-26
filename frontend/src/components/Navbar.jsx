@@ -14,8 +14,12 @@ export default function Navbar() {
     };
 
     return (
-        <nav className="bg-white/80 backdrop-blur-md border-b border-slate-200 sticky top-0 z-50">
-            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <>
+            <div className="bg-indigo-600 text-white text-[10px] font-bold py-1 text-center tracking-widest uppercase shadow-sm">
+                Deployed Build: {FRONTEND_VERSION} 🛡️ Active
+            </div>
+            <nav className="bg-white/80 backdrop-blur-md border-b border-slate-200 sticky top-0 z-50">
+                <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
                 <div className="flex justify-between h-16 items-center">
                     <Link to="/" className="flex items-center gap-2">
                         <img src="/logo.jpg" alt="Logo" className="h-10 w-auto object-contain" onError={(e) => { e.target.style.display = 'none'; e.target.nextSibling.style.display = 'block'; }} />
@@ -136,5 +140,6 @@ export default function Navbar() {
                 <span className="text-[6px] text-slate-200 font-mono opacity-30">{ACTUAL_API_BASE}</span>
             </div>
         </nav>
-    );
+    </>
+);
 }
