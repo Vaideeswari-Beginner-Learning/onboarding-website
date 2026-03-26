@@ -5,6 +5,7 @@
   "description": "Unified build for Render deployment",
   "scripts": {
     "build": "npm run install-backend && npm run install-frontend && npm run build-frontend && npm run sync-frontend",
+    "vercel-build": "cd frontend && npm install && npm run build && cd .. && mkdir -p dist && cp -r frontend/dist/* dist/",
     "install-backend": "cd backend && npm install",
     "install-frontend": "cd frontend && npm install",
     "build-frontend": "cd frontend && npm run build",
