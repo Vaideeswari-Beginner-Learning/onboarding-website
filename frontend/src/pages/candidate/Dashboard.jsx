@@ -82,21 +82,21 @@ export default function CandidateDashboard() {
                     <motion.div variants={itemVariants}>
                         <Link to="/onboarding/personal-details" className="group block h-full">
                                 <motion.div 
-                                    whileHover={{ y: -8, scale: 1.01 }}
+                                    whileHover={{ y: -12, scale: 1.02 }}
                                     className={`rounded-[2.5rem] p-1 h-full shadow-2xl transition-all duration-500 ${isPersonalDone
-                                        ? 'bg-gradient-to-br from-violet-600 via-indigo-600 to-blue-600 shadow-indigo-500/30'
-                                        : 'bg-gradient-to-br from-indigo-50 to-blue-50 border-2 border-indigo-100/50 hover:border-indigo-400 shadow-indigo-200/20'
+                                        ? 'bg-gradient-to-br from-indigo-600 via-violet-600 to-blue-600 shadow-indigo-500/40'
+                                        : 'bg-gradient-to-br from-indigo-100 via-violet-50 to-blue-200 border-2 border-indigo-400/30'
                                         }`}>
-                                    <div className={`rounded-[2.2rem] p-8 h-full relative overflow-hidden flex flex-col ${isPersonalDone ? 'bg-white/5 backdrop-blur-sm' : 'bg-white/80 backdrop-blur-md'
+                                    <div className={`rounded-[2.2rem] p-8 h-full relative overflow-hidden flex flex-col ${isPersonalDone ? 'bg-white/10 backdrop-blur-md' : 'bg-white/90 backdrop-blur-xl'
                                         }`}>
                                     {/* Icon Background Textures */}
-                                    <div className="absolute -top-10 -right-10 opacity-[0.03] group-hover:opacity-[0.07] transition-opacity rotate-12">
+                                    <div className="absolute -top-10 -right-10 opacity-[0.05] group-hover:opacity-[0.1] transition-opacity rotate-12">
                                         <FileText className={`w-48 h-48 ${isPersonalDone ? 'text-white' : 'text-indigo-600'}`} />
                                     </div>
 
-                                    <div className={`w-16 h-16 rounded-2xl flex items-center justify-center mb-8 shadow-xl transition-all duration-500 group-hover:rotate-6 ${isPersonalDone
+                                    <div className={`w-16 h-16 rounded-2xl flex items-center justify-center mb-8 shadow-xl transition-all duration-500 group-hover:scale-110 group-hover:rotate-12 ${isPersonalDone
                                         ? 'bg-white text-indigo-600 shadow-indigo-900/20'
-                                        : 'bg-indigo-50 text-indigo-600 shadow-indigo-200/50'
+                                        : 'bg-indigo-600 text-white shadow-indigo-200/50'
                                         }`}>
                                         {isPersonalDone ? <CheckSquare className="w-8 h-8" /> : <FileText className="w-8 h-8" />}
                                     </div>
@@ -104,15 +104,15 @@ export default function CandidateDashboard() {
                                     <h3 className={`text-2xl font-black mb-4 transition-colors ${isPersonalDone ? 'text-white' : 'text-slate-900 group-hover:text-indigo-600'
                                         }`}>Personal Details</h3>
                                     
-                                    <p className={`mb-8 text-sm font-medium leading-relaxed ${isPersonalDone ? 'text-indigo-100' : 'text-slate-500'
+                                    <p className={`mb-8 text-sm font-bold leading-relaxed ${isPersonalDone ? 'text-white/90' : 'text-slate-600'
                                         }`}>Basic information, identity verification, and contact details.</p>
                                     
-                                    <div className="mt-auto pt-4 border-t border-white/10 flex items-center justify-between">
+                                    <div className="mt-auto pt-4 border-t border-indigo-100/20 flex items-center justify-between">
                                         <span className={`text-sm font-black flex items-center gap-1 ${isPersonalDone ? 'text-white' : 'text-indigo-600'
                                             }`}>
-                                            {isPersonalDone ? 'Completed • View' : 'Start Journey'} <ChevronRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
+                                            {isPersonalDone ? 'Completed • View' : 'Start Journey'} <ChevronRight className="w-4 h-4 group-hover:translate-x-2 transition-transform" />
                                         </span>
-                                        {isPersonalDone && <div className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></div>}
+                                        {isPersonalDone && <div className="w-3 h-3 rounded-full bg-emerald-400 animate-ping"></div>}
                                     </div>
                                 </div>
                             </motion.div>
@@ -124,20 +124,20 @@ export default function CandidateDashboard() {
                         {isPersonalDone ? (
                             <Link to="/onboarding/bank-details" className="group block h-full">
                                 <motion.div 
-                                    whileHover={{ y: -8, scale: 1.01 }}
+                                    whileHover={{ y: -12, scale: 1.02 }}
                                     className={`rounded-[2.5rem] p-1 h-full shadow-2xl transition-all duration-500 ${isBankDone
-                                        ? 'bg-gradient-to-br from-rose-500 via-pink-500 to-fuchsia-500 shadow-pink-500/30'
-                                        : 'bg-white border-2 border-slate-100 hover:border-pink-200 shadow-slate-200/40'
+                                        ? 'bg-gradient-to-br from-rose-600 via-pink-600 to-fuchsia-600 shadow-pink-500/40'
+                                        : 'bg-gradient-to-br from-rose-100 via-pink-50 to-fuchsia-200 border-2 border-rose-400/30'
                                         }`}>
-                                    <div className={`rounded-[2.2rem] p-8 h-full relative overflow-hidden flex flex-col ${isBankDone ? 'bg-white/5 backdrop-blur-sm' : 'bg-white'
+                                    <div className={`rounded-[2.2rem] p-8 h-full relative overflow-hidden flex flex-col ${isBankDone ? 'bg-white/10 backdrop-blur-md' : 'bg-white/90 backdrop-blur-xl'
                                         }`}>
-                                        <div className="absolute -top-10 -right-10 opacity-[0.03] group-hover:opacity-[0.07] transition-opacity rotate-12">
+                                        <div className="absolute -top-10 -right-10 opacity-[0.05] group-hover:opacity-[0.1] transition-opacity rotate-12">
                                             <Upload className={`w-48 h-48 ${isBankDone ? 'text-white' : 'text-rose-500'}`} />
                                         </div>
 
-                                        <div className={`w-16 h-16 rounded-2xl flex items-center justify-center mb-8 shadow-xl transition-all duration-500 group-hover:-rotate-6 ${isBankDone
+                                        <div className={`w-16 h-16 rounded-2xl flex items-center justify-center mb-8 shadow-xl transition-all duration-500 group-hover:scale-110 group-hover:-rotate-12 ${isBankDone
                                             ? 'bg-white text-rose-600 shadow-rose-900/20'
-                                            : 'bg-rose-50 text-rose-500 shadow-rose-200/50'
+                                            : 'bg-rose-600 text-white shadow-rose-200/50'
                                             }`}>
                                             {isBankDone ? <CheckSquare className="w-8 h-8" /> : <Upload className="w-8 h-8" />}
                                         </div>
@@ -145,28 +145,28 @@ export default function CandidateDashboard() {
                                         <h3 className={`text-2xl font-black mb-4 transition-colors ${isBankDone ? 'text-white' : 'text-slate-900 group-hover:text-rose-600'
                                             }`}>Bank Details</h3>
                                         
-                                        <p className={`mb-8 text-sm font-medium leading-relaxed ${isBankDone ? 'text-rose-100' : 'text-slate-500'
+                                        <p className={`mb-8 text-sm font-bold leading-relaxed ${isBankDone ? 'text-white/90' : 'text-slate-600'
                                             }`}>Salary account settings and PAN card information.</p>
                                         
-                                        <div className="mt-auto pt-4 border-t border-white/10 flex items-center justify-between">
+                                        <div className="mt-auto pt-4 border-t border-rose-100/20 flex items-center justify-between">
                                             <span className={`text-sm font-black flex items-center gap-1 ${isBankDone ? 'text-white' : 'text-rose-600'
                                                 }`}>
-                                                {isBankDone ? 'Completed • View' : 'Setup Account'} <ChevronRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
+                                                {isBankDone ? 'Completed • View' : 'Setup Account'} <ChevronRight className="w-4 h-4 group-hover:translate-x-2 transition-transform" />
                                             </span>
-                                            {isBankDone && <div className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></div>}
+                                            {isBankDone && <div className="w-3 h-3 rounded-full bg-emerald-400 animate-ping"></div>}
                                         </div>
                                     </div>
                                 </motion.div>
                             </Link>
                         ) : (
                             <div className="h-full group">
-                                <div className="rounded-[2.5rem] p-1 h-full bg-slate-100 border-2 border-dashed border-slate-200">
-                                    <div className="rounded-[2.2rem] p-8 h-full bg-white/50 backdrop-blur-sm relative overflow-hidden flex flex-col items-center justify-center text-center">
-                                        <div className="w-16 h-16 bg-slate-100 rounded-2xl flex items-center justify-center mb-6 text-slate-400">
+                                <div className="rounded-[2.5rem] p-1 h-full bg-slate-200 border-2 border-dashed border-slate-300">
+                                    <div className="rounded-[2.2rem] p-8 h-full bg-white/40 backdrop-blur-md relative overflow-hidden flex flex-col items-center justify-center text-center">
+                                        <div className="w-16 h-16 bg-white/50 rounded-2xl flex items-center justify-center mb-6 text-slate-400 shadow-inner">
                                             <Lock className="w-8 h-8" />
                                         </div>
-                                        <h3 className="text-xl font-black text-slate-400 mb-2">Bank Details</h3>
-                                        <p className="text-xs font-bold text-slate-400 uppercase tracking-widest leading-relaxed">
+                                        <h3 className="text-xl font-black text-slate-400 mb-2 uppercase tracking-tighter">Locked</h3>
+                                        <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest leading-relaxed max-w-[150px]">
                                             Complete Personal Details to Unlock
                                         </p>
                                     </div>
@@ -180,20 +180,20 @@ export default function CandidateDashboard() {
                         {isBankDone ? (
                             <Link to="/onboarding/documents" className="group block h-full">
                                 <motion.div 
-                                    whileHover={{ y: -8, scale: 1.01 }}
+                                    whileHover={{ y: -12, scale: 1.02 }}
                                     className={`rounded-[2.5rem] p-1 h-full shadow-2xl transition-all duration-500 ${isDocsDone
-                                        ? 'bg-gradient-to-br from-amber-400 via-orange-500 to-red-500 shadow-orange-500/30'
-                                        : 'bg-gradient-to-br from-amber-50 to-orange-50 border-2 border-orange-100/50 hover:border-orange-400 shadow-orange-200/20'
+                                        ? 'bg-gradient-to-br from-amber-500 via-orange-500 to-red-600 shadow-orange-500/40'
+                                        : 'bg-gradient-to-br from-amber-100 via-orange-50 to-red-200 border-2 border-orange-400/30'
                                         }`}>
-                                    <div className={`rounded-[2.2rem] p-8 h-full relative overflow-hidden flex flex-col ${isDocsDone ? 'bg-white/5 backdrop-blur-sm' : 'bg-white/80 backdrop-blur-md'
+                                    <div className={`rounded-[2.2rem] p-8 h-full relative overflow-hidden flex flex-col ${isDocsDone ? 'bg-white/10 backdrop-blur-md' : 'bg-white/90 backdrop-blur-xl'
                                         }`}>
-                                        <div className="absolute -top-10 -right-10 opacity-[0.03] group-hover:opacity-[0.07] transition-opacity rotate-12">
+                                        <div className="absolute -top-10 -right-10 opacity-[0.05] group-hover:opacity-[0.1] transition-opacity rotate-12">
                                             <Upload className={`w-48 h-48 ${isDocsDone ? 'text-white' : 'text-orange-500'}`} />
                                         </div>
 
-                                        <div className={`w-16 h-16 rounded-2xl flex items-center justify-center mb-8 shadow-xl transition-all duration-500 group-hover:rotate-12 ${isDocsDone
+                                        <div className={`w-16 h-16 rounded-2xl flex items-center justify-center mb-8 shadow-xl transition-all duration-500 group-hover:scale-110 group-hover:rotate-12 ${isDocsDone
                                             ? 'bg-white text-orange-600 shadow-orange-900/20'
-                                            : 'bg-orange-50 text-orange-500 shadow-orange-200/50'
+                                            : 'bg-orange-600 text-white shadow-orange-200/50'
                                             }`}>
                                             {isDocsDone ? <CheckSquare className="w-8 h-8" /> : <Upload className="w-8 h-8" />}
                                         </div>
@@ -201,28 +201,28 @@ export default function CandidateDashboard() {
                                         <h3 className={`text-2xl font-black mb-4 transition-colors ${isDocsDone ? 'text-white' : 'text-slate-900 group-hover:text-orange-600'
                                             }`}>Documents Upload</h3>
                                         
-                                        <p className={`mb-8 text-sm font-medium leading-relaxed ${isDocsDone ? 'text-orange-100' : 'text-slate-500'
+                                        <p className={`mb-8 text-sm font-bold leading-relaxed ${isDocsDone ? 'text-white/90' : 'text-slate-600'
                                             }`}>ID proofs, degrees, and employment history scanning.</p>
                                         
-                                        <div className="mt-auto pt-4 border-t border-white/10 flex items-center justify-between">
+                                        <div className="mt-auto pt-4 border-t border-orange-100/20 flex items-center justify-between">
                                             <span className={`text-sm font-black flex items-center gap-1 ${isDocsDone ? 'text-white' : 'text-orange-600'
                                                 }`}>
-                                                {isDocsDone ? 'Completed • View' : 'Upload Files'} <ChevronRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
+                                                {isDocsDone ? 'Completed • View' : 'Upload Files'} <ChevronRight className="w-4 h-4 group-hover:translate-x-2 transition-transform" />
                                             </span>
-                                            {isDocsDone && <div className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></div>}
+                                            {isDocsDone && <div className="w-3 h-3 rounded-full bg-emerald-400 animate-ping"></div>}
                                         </div>
                                     </div>
                                 </motion.div>
                             </Link>
                         ) : (
                             <div className="h-full group">
-                                <div className="rounded-[2.5rem] p-1 h-full bg-slate-100 border-2 border-dashed border-slate-200">
-                                    <div className="rounded-[2.2rem] p-8 h-full bg-white/50 backdrop-blur-sm relative overflow-hidden flex flex-col items-center justify-center text-center">
-                                        <div className="w-16 h-16 bg-slate-100 rounded-2xl flex items-center justify-center mb-6 text-slate-400">
+                                <div className="rounded-[2.5rem] p-1 h-full bg-slate-200 border-2 border-dashed border-slate-300">
+                                    <div className="rounded-[2.2rem] p-8 h-full bg-white/40 backdrop-blur-md relative overflow-hidden flex flex-col items-center justify-center text-center">
+                                        <div className="w-16 h-16 bg-white/50 rounded-2xl flex items-center justify-center mb-6 text-slate-400 shadow-inner">
                                             <Lock className="w-8 h-8" />
                                         </div>
-                                        <h3 className="text-xl font-black text-slate-400 mb-2">Documents Upload</h3>
-                                        <p className="text-xs font-bold text-slate-400 uppercase tracking-widest leading-relaxed">
+                                        <h3 className="text-xl font-black text-slate-400 mb-2 uppercase tracking-tighter">Locked</h3>
+                                        <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest leading-relaxed max-w-[150px]">
                                             Complete Bank Details to Unlock
                                         </p>
                                     </div>
