@@ -114,9 +114,6 @@ export default function Login() {
 
                 </div>
                 
-                <div className="mt-8 text-center text-xs text-slate-400 font-mono tracking-widest uppercase">
-                    Build: {import.meta.env.VITE_VERSION || '2.1.2-HARDENED'}
-                </div>
             </div>
         </div>
     );
