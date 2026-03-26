@@ -57,6 +57,7 @@ export default function Login() {
                 <div className="premium-card py-10 px-6 sm:px-12">
                     
                     <form className="space-y-6" onSubmit={handleLogin}>
+                        {/* ... existing form items ... */}
                         <div>
                             <label htmlFor="email" className="block text-sm font-medium text-slate-700">
                                 Email Address
@@ -111,6 +112,10 @@ export default function Login() {
                          </button>
                     </form>
 
+                </div>
+                
+                <div className="mt-8 text-center text-xs text-slate-400 font-mono tracking-widest uppercase">
+                    Build: {import.meta.env.VITE_VERSION || '2.1.2-HARDENED'}
                 </div>
             </div>
         </div>
