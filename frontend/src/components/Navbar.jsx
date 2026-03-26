@@ -15,8 +15,8 @@ export default function Navbar() {
 
     return (
         <>
-            <div className="bg-indigo-600 text-white text-[10px] font-bold py-1 text-center tracking-widest uppercase shadow-sm">
-                Deployed Build: {FRONTEND_VERSION} 🛡️ Active
+            <div className="bg-red-600 text-white text-[10px] font-black py-1.5 text-center tracking-widest uppercase shadow-2xl border-b-2 border-yellow-400">
+                ⚠️ VERSION: {FRONTEND_VERSION} ⚠️ FORCING UPDATE...
             </div>
             <nav className="bg-white/80 backdrop-blur-md border-b border-slate-200 sticky top-0 z-50">
                 <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
