@@ -344,6 +344,7 @@ export async function analyzeDocument(file, docId) {
     return {
         status: 'valid',
         confidence: finalConfidence,
+        documentType: sig.label,
         details: successMsg,
         extractedData: {
             name: "VAIDEESWARI", 
