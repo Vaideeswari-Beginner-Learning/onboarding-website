@@ -1,6 +1,10 @@
 import { motion } from 'framer-motion';
 import { FileText, Upload, CheckSquare, Clock, Lock, ChevronRight } from 'lucide-react';
 import { generateOfferLetter } from '../../utils/offerLetterGenerator';
+import { useAuth } from '../../context/AuthContext';
+import Navbar from '../../components/Navbar';
+import { Link } from 'react-router-dom';
+import StatusTracker from '../../components/StatusTracker';
 
 export default function CandidateDashboard() {
     const { user } = useAuth();
