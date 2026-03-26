@@ -2,7 +2,7 @@ import React, { createContext, useContext, useState, useEffect } from 'react';
 
 const AuthContext = createContext(null);
 
-export const FRONTEND_VERSION = '2.1.3-PRODUCTION';
+export const FRONTEND_VERSION = '2.1.4-PATCH';
 // NOTE: API_BASE is set AFTER getApiBase is defined below. See line ~34.
 // Fallback logic for local development if VITE_API_URL is missing
 const getApiBase = () => {
@@ -16,7 +16,13 @@ const getApiBase = () => {
     }
     // Prefer VITE_API_URL environment variable if it exists (set in Vercel/Netlify)
     const envUrl = import.meta.env.VITE_API_URL;
-    if (envUrl) return envUrl;
+    if (envUrl) {
+        // PATCH: Overriding incorrect Vercel env var domain
+        if (envUrl.includes('onboarding-website.onrender.com')) {
+            return 'https://onboarding-website-1.onrender.com';
+        }
+        return envUrl;
+    }
 
     // FORCED PRODUCTION FALLBACK: 
     // Point directly to the live Render backend if no env var is found.
