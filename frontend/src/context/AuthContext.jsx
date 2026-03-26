@@ -2,7 +2,7 @@ import React, { createContext, useContext, useState, useEffect } from 'react';
 
 const AuthContext = createContext(null);
 
-export const FRONTEND_VERSION = '2.1.8-ULTRA';
+export const FRONTEND_VERSION = '2.1.8-ULTRA'; // Busted at 2026-03-26T15:45:00Z
 // NOTE: API_BASE is set AFTER getApiBase is defined below. See line ~34.
 // Fallback logic for local development if VITE_API_URL is missing
 const getApiBase = () => {
