@@ -681,20 +681,20 @@ function DocumentUploadContent() {
                             {/* 🔥 Smart Result Dashboard */}
                             {analysisResult.status === 'valid' && analysisResult.extractedData && (
                                 <div className="mb-6 space-y-4 animate-in slide-in-from-top-4 duration-500">
-                                    <div className="flex items-center justify-between p-4 bg-emerald-50 rounded-2xl border border-emerald-100 shadow-sm shadow-emerald-50 text-left">
-                                        <div className="flex items-center gap-3">
-                                            <div className="p-2 bg-white rounded-xl shadow-sm">
+                                    <div className="flex flex-col sm:flex-row sm:items-center justify-between p-4 bg-emerald-50 rounded-2xl border border-emerald-100 shadow-sm shadow-emerald-50 text-left gap-3">
+                                        <div className="flex items-center gap-3 min-w-0">
+                                            <div className="p-2 bg-white rounded-xl shadow-sm shrink-0">
                                                 <Brain className="w-5 h-5 text-emerald-600" />
                                             </div>
-                                            <div>
+                                            <div className="min-w-0">
                                                 <p className="text-[10px] uppercase tracking-widest text-emerald-600 font-bold">Document Type</p>
-                                                <p className="font-black text-slate-900 leading-tight">
+                                                <p className="font-black text-slate-900 leading-tight truncate whitespace-normal break-words">
                                                     {analysisResult.extractedData.name ? `${analysisResult.extractedData.name}'s ` : ''}{analysisResult.documentType || 'Verified Document'}
                                                 </p>
                                             </div>
                                         </div>
-                                        <div className="text-right">
-                                            <span className="px-3 py-1 bg-emerald-500 text-white text-[10px] font-black rounded-full uppercase tracking-tighter shadow-sm shadow-emerald-200">Verified Successfully</span>
+                                        <div className="sm:text-right shrink-0">
+                                            <span className="inline-block px-3 py-1 bg-emerald-500 text-white text-[10px] font-black rounded-full uppercase tracking-tighter shadow-sm shadow-emerald-200 whitespace-nowrap">Verified Successfully</span>
                                         </div>
                                     </div>
 
