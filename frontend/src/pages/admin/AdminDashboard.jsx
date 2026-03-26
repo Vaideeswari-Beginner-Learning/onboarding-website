@@ -15,7 +15,36 @@ export default function AdminDashboard() {
     const [adminInput, setAdminInput] = useState('');
     const [retentionWarnings, setRetentionWarnings] = useState([]);
     const chatEndRef = useRef(null);
+    const [searchTerm, setSearchTerm] = useState('');
+    const [statusFilter, setStatusFilter] = useState('All');
     const [mailerStatus, setMailerStatus] = useState({ configured: false, user: '' });
+
+    const filteredCandidates = candidates.filter(candidate => {
+        const matchesSearch = (candidate.name || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
+                             (candidate.email || '').toLowerCase().includes(searchTerm.toLowerCase());
+        const matchesStatus = statusFilter === 'All' || candidate.status === statusFilter;
+        return matchesSearch && matchesStatus;
+    });
+
+    const handleExportExcel = () => {
+        const headers = ["Name", "Email", "Role", "Account Number", "IFSC Code", "Bank Name"];
+        const rows = filteredCandidates.map(c => [
+            c.name || '',
+            c.email || '',
+            c.personalDetails?.jobRole || c.role || 'Candidate',
+            c.bankDetails?.accountNumber || '',
+            c.bankDetails?.ifscCode || '',
+            c.bankDetails?.bankName || ''
+        ]);
+
+        const csvContent = [
+            headers.join(","),
+            ...rows.map(r => r.map(field => `"${field}"`).join(","))
+        ].join("\n");
+
+        const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+        saveAs(blob, `Employee_Data_${new Date().toLocaleDateString().replace(/\//g, '-')}.csv`);
+    };
 
 
     useEffect(() => {
@@ -284,12 +313,50 @@ export default function AdminDashboard() {
 
             <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
                 {/* Header and Stats code remains same, omitted for brevity but keeping structure */}
-                <div className="md:flex md:items-center md:justify-between mb-8">
+                <div className="md:flex md:items-center md:justify-between mb-8 gap-4">
                     <div>
                         <h1 className="text-3xl font-extrabold text-slate-900 tracking-tight">Admin Dashboard</h1>
                         <p className="mt-2 text-slate-500 font-medium">Manage employee onboardings and documents.</p>
                     </div>
+                    <div className="mt-4 md:mt-0">
+                        <button
+                            onClick={handleExportExcel}
+                            className="w-full md:w-auto px-6 py-3 bg-indigo-600 text-white font-black rounded-xl shadow-lg shadow-indigo-200 hover:bg-indigo-700 transition-all flex items-center justify-center gap-2 active:scale-95"
+                        >
+                            <FileText className="w-5 h-5" />
+                            Export Employees (Excel)
+                        </button>
+                    </div>
+                </div>
 
+                {/* Search and Filter Bar */}
+                <div className="flex flex-col md:flex-row gap-4 mb-8">
+                    <div className="relative flex-1">
+                        <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 w-5 h-5" />
+                        <input
+                            type="text"
+                            placeholder="Search by name or email..."
+                            className="w-full pl-12 pr-4 py-3.5 rounded-2xl border border-slate-200 focus:ring-2 focus:ring-indigo-500 bg-white shadow-sm outline-none transition-all font-medium text-slate-700"
+                            value={searchTerm}
+                            onChange={(e) => setSearchTerm(e.target.value)}
+                        />
+                    </div>
+                    <div className="flex gap-4">
+                        <div className="relative min-w-[160px]">
+                            <Filter className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 w-4 h-4 pointer-events-none" />
+                            <select
+                                className="w-full pl-10 pr-8 py-3.5 rounded-2xl border border-slate-200 focus:ring-2 focus:ring-indigo-500 bg-white shadow-sm outline-none appearance-none transition-all font-bold text-slate-700 cursor-pointer"
+                                value={statusFilter}
+                                onChange={(e) => setStatusFilter(e.target.value)}
+                            >
+                                <option value="All">All Status</option>
+                                <option value="Pending">Pending</option>
+                                <option value="Submitted">Submitted</option>
+                                <option value="Verified">Verified</option>
+                                <option value="Rejected">Rejected</option>
+                            </select>
+                        </div>
+                    </div>
                 </div>
 
 
@@ -327,69 +394,76 @@ export default function AdminDashboard() {
                                 </tr>
                             </thead>
                             <tbody className="bg-white divide-y divide-slate-200">
-                                {candidates.map((candidate) => (
-                                    <tr key={candidate._id || candidate.id} className="hover:bg-slate-50 transition-colors">
-                                         <td className="px-6 py-4 whitespace-nowrap">
-                                             <div className="flex items-center">
-                                                 <div className="flex-shrink-0 h-10 w-10">
-                                                     <div className="h-10 w-10 rounded-full bg-indigo-100 flex items-center justify-center text-indigo-600 font-extrabold shadow-sm">
-                                                         {(candidate.name || candidate.email || '?').toUpperCase().charAt(0)}
-                                                     </div>
-                                                 </div>
-                                                 <div className="ml-4">
-                                                     <div className="text-sm font-medium text-slate-900">{candidate.name}</div>
-                                                     <div className="text-sm text-slate-500">{candidate.email}</div>
-                                                 </div>
-                                             </div>
-                                         </td>
-                                         <td className="px-6 py-4 whitespace-nowrap">
-                                             <span className="text-xs font-bold text-indigo-700 bg-indigo-50 px-2 py-0.5 rounded border border-indigo-100 w-fit">
-                                                 {candidate.personalDetails?.employeeId || 'N/A'}
-                                             </span>
-                                         </td>
-                                         <td className="px-6 py-4 whitespace-nowrap">
-                                             <div className="text-sm font-bold text-slate-900 flex items-center gap-1">
-                                                 <Clock className="w-3 h-3 text-emerald-500" />
-                                                 {candidate.personalDetails?.joiningDate || 'Pending'}
-                                             </div>
-                                         </td>
-                                        <td className="px-6 py-4 whitespace-nowrap">
-                                            <div className="flex flex-col gap-1">
-                                                {getStatusBadge(candidate.status)}
-
-                                            </div>
-                                        </td>
-                                        <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                                            <button
-                                                onClick={() => handleDownloadAll(candidate)}
-                                                className="text-emerald-600 hover:text-emerald-900 bg-emerald-50 hover:bg-emerald-100 px-3 py-1 rounded-md mr-2 transition-colors inline-flex items-center"
-                                                title="Download All Documents"
-                                            >
-                                                <FileText className="w-4 h-4 mr-1" /> Zip
-                                            </button>
-                                            <button
-                                                onClick={() => setSelectedChatCandidate(candidate)}
-                                                className="text-blue-600 hover:text-blue-900 bg-blue-50 hover:bg-blue-100 px-3 py-1 rounded-md mr-2 transition-colors inline-flex items-center"
-                                            >
-                                                <MessageSquare className="w-4 h-4 mr-1" /> Chat
-                                            </button>
-                                            <button
-                                                onClick={() => handleDeleteCandidate(candidate._id || candidate.id)}
-                                                className="text-red-600 hover:text-red-900 bg-red-50 hover:bg-red-100 px-3 py-1 rounded-md mr-2 transition-colors inline-flex items-center"
-                                                title="Delete Candidate"
-                                            >
-                                                <Trash2 className="w-4 h-4 mr-1" /> Remove
-                                            </button>
-
-                                            <button
-                                                onClick={() => navigate(`/admin/candidate/${candidate._id || candidate.id}`)}
-                                                className="text-indigo-600 hover:text-indigo-900 bg-indigo-50 hover:bg-indigo-100 px-3 py-1 rounded-md transition-all inline-flex items-center font-bold"
-                                            >
-                                                <Eye className="w-4 h-4 mr-1" /> View
-                                            </button>
+                                {filteredCandidates.length === 0 ? (
+                                    <tr>
+                                        <td colSpan="5" className="px-6 py-12 text-center text-slate-500 font-medium">
+                                            No candidates found matching your search.
                                         </td>
                                     </tr>
-                                ))}
+                                ) : (
+                                    filteredCandidates.map((candidate) => (
+                                        <tr key={candidate._id || candidate.id} className="hover:bg-slate-50 transition-colors">
+                                            <td className="px-6 py-4 whitespace-nowrap">
+                                                <div className="flex items-center">
+                                                    <div className="flex-shrink-0 h-10 w-10">
+                                                        <div className="h-10 w-10 rounded-full bg-indigo-100 flex items-center justify-center text-indigo-600 font-extrabold shadow-sm">
+                                                            {(candidate.name || candidate.email || '?').toUpperCase().charAt(0)}
+                                                        </div>
+                                                    </div>
+                                                    <div className="ml-4">
+                                                        <div className="text-sm font-medium text-slate-900">{candidate.name}</div>
+                                                        <div className="text-sm text-slate-500">{candidate.email}</div>
+                                                    </div>
+                                                </div>
+                                            </td>
+                                            <td className="px-6 py-4 whitespace-nowrap">
+                                                <span className="text-xs font-bold text-indigo-700 bg-indigo-50 px-2 py-0.5 rounded border border-indigo-100 w-fit">
+                                                    {candidate.personalDetails?.employeeId || 'N/A'}
+                                                </span>
+                                            </td>
+                                            <td className="px-6 py-4 whitespace-nowrap">
+                                                <div className="text-sm font-bold text-slate-900 flex items-center gap-1">
+                                                    <Clock className="w-3 h-3 text-emerald-500" />
+                                                    {candidate.personalDetails?.joiningDate || 'Pending'}
+                                                </div>
+                                            </td>
+                                            <td className="px-6 py-4 whitespace-nowrap">
+                                                <div className="flex flex-col gap-1">
+                                                    {getStatusBadge(candidate.status)}
+                                                </div>
+                                            </td>
+                                            <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                                                <button
+                                                    onClick={() => handleDownloadAll(candidate)}
+                                                    className="text-emerald-600 hover:text-emerald-900 bg-emerald-50 hover:bg-emerald-100 px-3 py-1 rounded-md mr-2 transition-colors inline-flex items-center"
+                                                    title="Download All Documents"
+                                                >
+                                                    <FileText className="w-4 h-4 mr-1" /> Zip
+                                                </button>
+                                                <button
+                                                    onClick={() => setSelectedChatCandidate(candidate)}
+                                                    className="text-blue-600 hover:text-blue-900 bg-blue-50 hover:bg-blue-100 px-3 py-1 rounded-md mr-2 transition-colors inline-flex items-center"
+                                                >
+                                                    <MessageSquare className="w-4 h-4 mr-1" /> Chat
+                                                </button>
+                                                <button
+                                                    onClick={() => handleDeleteCandidate(candidate._id || candidate.id)}
+                                                    className="text-red-600 hover:text-red-900 bg-red-50 hover:bg-red-100 px-3 py-1 rounded-md mr-2 transition-colors inline-flex items-center"
+                                                    title="Delete Candidate"
+                                                >
+                                                    <Trash2 className="w-4 h-4 mr-1" /> Remove
+                                                </button>
+
+                                                <button
+                                                    onClick={() => navigate(`/admin/candidate/${candidate._id || candidate.id}`)}
+                                                    className="text-indigo-600 hover:text-indigo-900 bg-indigo-50 hover:bg-indigo-100 px-3 py-1 rounded-md transition-all inline-flex items-center font-bold"
+                                                >
+                                                    <Eye className="w-4 h-4 mr-1" /> View
+                                                </button>
+                                            </td>
+                                        </tr>
+                                    ))
+                                )}
                             </tbody>
                         </table>
                     </div>
