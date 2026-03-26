@@ -601,6 +601,7 @@ function DocumentUploadContent() {
                                 <Brain className="w-10 h-10 text-indigo-600 ai-brain-pulse" />
                             </div>
                             <div className="absolute inset-0 border-2 border-indigo-400 rounded-2xl ai-scan-border"></div>
+                            <div className="ai-moving-line"></div>
                         </div>
                         <h3 className="text-xl font-bold text-slate-900 mb-2">Analyzing {analyzingDocId === 'photo' ? 'passport photo' : 'document'}...</h3>
                         <p className="text-slate-500 text-sm mb-4">
